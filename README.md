@@ -28,4 +28,4 @@ endif
 > Note: Do not actually use `${HOME}` in `g:python_host_prog` or `g:python3_host_prog` as this will confuse NeoVim and cause it to unload python and all rplugins.  I'm merely showing it here as an example
 
 ### Usage Video:
-*coming soon*
+![quick usage example](doc/quickdemo.gif)
