@@ -75,10 +75,11 @@ class NvimPudb(object):
         self.nvim = nvim
         # update the __logger__ to use neovim for messages
         nvimhandler = NvimOutLogHandler(nvim)
-        nvimhandler.setLevel(logging.DEBUG)
+        nvimhandler.setLevel(logging.INFO)
         # nvimhandler.setLevel(logging.INFO)
         __logger__.addHandler(nvimhandler)
-        __logger__.setLevel(logging.DEBUG)
+        # TODO: enable only for messages debug output
+        # __logger__.setLevel(logging.DEBUG)
 
     def iter_breakpoints(self, buffname=None):
         """iter_breakpoints
