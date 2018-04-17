@@ -71,7 +71,6 @@ class NvimPudb(object):
         ['filename', 'lineno'])
 
     def __init__(self, nvim):
-        super().__init__()
         self.nvim = nvim
         # update the __logger__ to use neovim for messages
         nvimhandler = NvimOutLogHandler(nvim)
@@ -80,6 +79,12 @@ class NvimPudb(object):
         __logger__.addHandler(nvimhandler)
         # TODO: enable only for messages debug output
         # __logger__.setLevel(logging.DEBUG)
+        # define our sign command
+        # force first_eval, TODO: remove setup function if this works
+        self._first_eval = True
+        nvim.command(':sign define {} text={} texthl={}'.format(
+            self._sgnname, self._bpsymbol, self._hlgroup))
+        super().__init__()
 
     def iter_breakpoints(self, buffname=None):
         """iter_breakpoints
