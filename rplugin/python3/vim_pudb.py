@@ -82,6 +82,8 @@ class NvimPudb(object):
         # define our sign command
         # force first_eval, TODO: remove setup function if this works
         self._first_eval = True
+        if 'pudb_breakpoint_symbol' in self.nvim.vars:
+            self._bpsymbol = self.nvim.vars['pudb_breakpoint_symbol']
         nvim.command(':sign define {} text={} texthl={}'.format(
             self._sgnname, self._bpsymbol, self._hlgroup))
         super().__init__()
