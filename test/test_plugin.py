@@ -64,8 +64,8 @@ class TestPUDBPlugin(unittest.TestCase):
         '''
         # try embedding nvim in order to run the tests
         # os.environ['NVIM_LISTEN_ADDRESS']=
-        # nvim = neovim.attach('child', argv=["/usr/bin/env", "nvim", "--embed"])
-        nvim = neovim.attach('socket', path='/var/folders/kt/yxsj572j6z18h6gq073_zvdr0000gn/T/nvim5K7tM0/0')
+        nvim = neovim.attach('child', argv=["/usr/bin/env", "nvim", "--embed"])
+        # nvim = neovim.attach('socket', path='/var/folders/kt/yxsj572j6z18h6gq073_zvdr0000gn/T/nvim5K7tM0/0')
         myplug = vim_pudb.NvimPudb(nvim)
         self.assertIsNotNone(myplug.sgnname)
         self.assertIsNotNone(myplug.bpsymbol)

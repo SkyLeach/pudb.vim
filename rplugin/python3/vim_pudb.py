@@ -51,47 +51,47 @@ class NvimPudb(object):
     nvim        = None
     _bps_placed = dict()  # type: Dict[str,List]
 
-    @property
+    # @property
     def sgnname(self):
         return self.nvim.vars.get('pudb_sign_name', 'pudbbp')
 
-    @sgnname.setter
-    def sgnname(self, sgnname):
+    # @sgnname.setter
+    def set_sgnname(self, sgnname):
         self.nvim.command("let g:pudb_sign_name='{}'".format(sgnname))
 
-    @property
+    # @property
     def bpsymbol(self):
         return self.nvim.vars.get('pudb_breakpoint_symbol', '!')
 
-    @bpsymbol.setter
-    def bpsymbol(self, bpsymbol):
+    # @bpsymbol.setter
+    def set_bpsymbol(self, bpsymbol):
         self.nvim.command("let g:pudb_breakpoint_symbol='{}'".format(bpsymbol))
 
-    @property
+    # @property
     def hlgroup(self):
         return self.nvim.vars.get('pudb_highlight_group', 'debug')
 
-    @hlgroup.setter
-    def hlgroup(self, hlgroup):
+    # @hlgroup.setter
+    def hset_lgroup(self, hlgroup):
         self.nvim.command("let g:pudb_highlight_group='{}'".format(hlgroup))
 
-    @property
+    # @property
     def launcher(self):
         return self.nvim.vars.get('pudb_python_launcher', 'python')
 
-    @launcher.setter
-    def launcher(self, launcher):
+    # @launcher.setter
+    def set_launcher(self, launcher):
         self.nvim.command("let g:pudb_python_launcher='{}'".format(launcher))
 
-    @property
+    # @property
     def entrypoint(self):
-        return self.nvim.vars.get('pudb_entry_point', self.cbname)
+        return self.nvim.vars.get('pudb_entry_point', self.cbname())
 
-    @entrypoint.setter
-    def entrypoint(self, entrypoint):
+    # @entrypoint.setter
+    def set_entrypoint(self, entrypoint):
         self.nvim.command("let g:pudb_entry_point='{}'".format(entrypoint))
 
-    @property
+    # @property
     def cbname(self):
         """cbname
         returns the current buffer's name attribute
@@ -178,7 +178,7 @@ class NvimPudb(object):
         :param buffname:
         """
         if not buffname:
-            buffname = self.cbname
+            buffname = self.cbname()
         self.nvim.command('sign unplace * file={}'.format(buffname))
         self._bps_placed[buffname] = []
         __logger__.debug(
@@ -252,7 +252,7 @@ class NvimPudb(object):
         :param buffname:
         """
         if not buffname:
-            buffname = self.cbname
+            buffname = self.cbname()
         row = self.nvim.current.window.cursor[0]
         if self.has_breakpoint(buffname, row):
             __logger__.debug('toggle remove.')
@@ -264,7 +264,7 @@ class NvimPudb(object):
 
     def get_buffer_venv_launcher(self, buffname=None):
         if not buffname:
-            buffname = self.cbname
+            buffname = self.cbname()
 
         def getpath(project):
             with open(os.path.join(project, '.project')) as pfile:
@@ -303,10 +303,10 @@ class NvimPudb(object):
         environment from ~/.virtualenvs/<venvs>/.project
         '''
         if not buffname:
-            buffname = self.cbname
+            buffname = self.cbname()
         if set_venv:
-            self.launcher = self.get_buffer_venv(buffname)
-        self.entrypoint = buffname
+            self.set_launcher(self.get_buffer_venv(buffname))
+        self.set_entrypoint(buffname)
         __logger__.info(
             'Settings {} as pudb entrypoint with python set as {}'.format(
                 self.entrypoint,
@@ -319,7 +319,7 @@ class NvimPudb(object):
         :param buffname:
         '''
         if not buffname:
-            buffname = self.cbname
+            buffname = self.cbname()
         __logger__.debug('refreshing breakpoints for file: %s', (buffname))
         # remove existing signs if any
         self.update_buffer(buffname)
@@ -332,7 +332,7 @@ class NvimPudb(object):
         :param buffname:
         '''
         if not buffname:
-            buffname = self.cbname
+            buffname = self.cbname()
         __logger__.debug('Autoprepping file "%s"', (buffname))
         self.firstrun()
         self.update_buffer(buffname)
