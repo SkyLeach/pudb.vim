@@ -9,7 +9,6 @@ import pprint
 import collections
 import os
 from typing import Dict, List
-import time
 # all rplugin import
 import neovim
 # rplugin-specific
@@ -49,15 +48,48 @@ class NvimPudb(object):
     """NvimPudb
     neovim rplugin class to manage pudb debugger from neovim code.
     """
-    nvim = None
-    _sgnname = 'pudbbp'
-    _bpsymbol = '!'
-    _hlgroup = 'debug'
-    _first_eval = False
-    _sign_id = 10000
-    _last_sign_id = _sign_id
-    _msg_handler = None
+    nvim        = None
     _bps_placed = dict()  # type: Dict[str,List]
+
+    @property
+    def sgnname(self):
+        return self.nvim.vars.get('pudb_sign_name', 'pudbbp')
+
+    @sgnname.setter
+    def sgnname(self, sgnname):
+        self.nvim.command("let g:pudb_sign_name='{}'".format(sgnname))
+
+    @property
+    def bpsymbol(self):
+        return self.nvim.vars.get('pudb_breakpoint_symbol', '!')
+
+    @bpsymbol.setter
+    def bpsymbol(self, bpsymbol):
+        self.nvim.command("let g:pudb_breakpoint_symbol='{}'".format(bpsymbol))
+
+    @property
+    def hlgroup(self):
+        return self.nvim.vars.get('pudb_highlight_group', 'debug')
+
+    @hlgroup.setter
+    def hlgroup(self, hlgroup):
+        self.nvim.command("let g:pudb_highlight_group='{}'".format(hlgroup))
+
+    @property
+    def launcher(self):
+        return self.nvim.vars.get('pudb_python_launcher', 'python')
+
+    @launcher.setter
+    def launcher(self, launcher):
+        self.nvim.command("let g:pudb_python_launcher='{}'".format(launcher))
+
+    @property
+    def entrypoint(self):
+        return self.nvim.vars.get('pudb_entry_point', self.cbname)
+
+    @entrypoint.setter
+    def entrypoint(self, entrypoint):
+        self.nvim.command("let g:pudb_entry_point='{}'".format(entrypoint))
 
     @property
     def cbname(self):
@@ -70,22 +102,16 @@ class NvimPudb(object):
         'Breakpoint',
         ['filename', 'lineno'])
 
+    __firstrun__ = False
+
     def __init__(self, nvim):
+        # set our nvim hook first...
         self.nvim = nvim
         # update the __logger__ to use neovim for messages
         nvimhandler = NvimOutLogHandler(nvim)
         nvimhandler.setLevel(logging.INFO)
-        # nvimhandler.setLevel(logging.INFO)
         __logger__.addHandler(nvimhandler)
-        # TODO: enable only for messages debug output
-        # __logger__.setLevel(logging.DEBUG)
         # define our sign command
-        # force first_eval, TODO: remove setup function if this works
-        self._first_eval = True
-        if 'pudb_breakpoint_symbol' in self.nvim.vars:
-            self._bpsymbol = self.nvim.vars['pudb_breakpoint_symbol']
-        nvim.command(':sign define {} text={} texthl={}'.format(
-            self._sgnname, self._bpsymbol, self._hlgroup))
         super().__init__()
 
     def iter_breakpoints(self, buffname=None):
@@ -114,7 +140,7 @@ class NvimPudb(object):
         signcmd = "sign place {} line={} name={} file={}".format(
             signid(buffname, lineno),
             lineno,
-            self._sgnname,
+            self.sgnname,
             buffname)
         __logger__.debug(signcmd)
         self.nvim.command(signcmd)
@@ -201,36 +227,14 @@ class NvimPudb(object):
         # autocmd FileType python nnoremap <silent> <leader>td :tabnew
         # term://source ${HOME}/.virtualenvs/$(cat .dbve)/bin/activate
         # && python -mpudb %<CR>:startinsert<CR>
-        new_term_tab_cmd = 'tabnew term://'
-
-        def basecmd_selector():
-            # pick our python
-            if 'pudb_python' in self.nvim.vars:
-                return self.nvim.vars['pudb_python']
-            elif 'python3_host_prog' in self.nvim.vars:
-                __logger__.info('pudb_python not set, using python3_host_prog')
-                return self.vim.vars['python3_host_prog']
-            else:
-                __logger__.info('pudb_python not set, using python3')
-                return 'python3'
-
-        new_term_tab_cmd += '{} -m pudb.run'.format(basecmd_selector())
-
-        def entrypoint_selector():
-            # pick our entry point
-            if 'pudb_entry_point' in self.nvim.vars:
-                return os.path.abspath(self.nvim.vars['pudb_entry_point'])
-            else:
-                __logger__.info('g:entry_point not set, using current buffer')
-                return os.path.abspath(self.cbname)
-
-        new_term_tab_cmd += ' {}'.format(entrypoint_selector())
+        new_term_tab_cmd = 'tabnew term://{} -m pudb.run {}'.format(
+            self.launcher,
+            self.entrypoint)
         __logger__.info('Starting debug tab with command:\n    {}'.format(
             new_term_tab_cmd))
         self.nvim.command(new_term_tab_cmd)
         # we have to wait for the terminal to be opened...
         self.nvim.command('startinsert')
-
 
     @neovim.command("PudbStatus", sync=False)
     def pudb_status(self):
@@ -258,12 +262,62 @@ class NvimPudb(object):
             self.place_sign(buffname, row)
         self.update_pudb_breakpoints(buffname)
 
+    def get_buffer_venv_launcher(self, buffname=None):
+        if not buffname:
+            buffname = self.cbname
+
+        def getpath(project):
+            with open(os.path.join(project, '.project')) as pfile:
+                return pfile.readline().strip()
+
+        def projectiter(ppaths):
+            for project in ppaths:
+                yield getpath(project)
+
+        for root, dirs, files in os.path.walk(os.path.expanduser(
+                '~/virtualenvs')):
+            venvs = set(dirs).difference(('bin', 'lib', 'include'))
+            for ppath in projectiter(venvs):
+                if buffname.startswith(os.path.join(root, ppath)):
+                    return os.path.join(ppath, 'bin', 'python')
+        return self.launcher
+
+    @neovim.command("PUDBSetEntrypointVENV", sync=False)
+    def set_curbuff_as_entrypoint_with_venv(self, buffname=None):
+        '''set_curbuff_as_entrypoint_with_venv
+
+        :param buffname: override the current buffer
+        '''
+        self.set_curbuff_as_entrypoint(buffname=buffname, set_venv=True)
+
+    @neovim.command("PUDBSetEntrypoint", sync=False)
+    def set_curbuff_as_entrypoint(self, buffname=None, set_venv=False):
+        '''set_curbuff_as_entrypoint
+
+        Set up the launcher to use the current buffer as the debug entry point.
+        By default this will not use the buffer's virtualenv.  Use
+        PUDBSetEntrypointVENV for that.
+
+        :param buffname: override current buffer name
+        :param set_venv: attempt to find and set the buffer's relative virtual
+        environment from ~/.virtualenvs/<venvs>/.project
+        '''
+        if not buffname:
+            buffname = self.cbname
+        if set_venv:
+            self.launcher = self.get_buffer_venv(buffname)
+        self.entrypoint = buffname
+        __logger__.info(
+            'Settings {} as pudb entrypoint with python set as {}'.format(
+                self.entrypoint,
+                self.launcher))
+
     @neovim.command("UpdateBreakPoints", sync=False)
     def update_breakpoints_cmd(self, buffname=None):
-        """update_breakpoints_cmd
+        '''update_breakpoints_cmd
         expose the UpdateBreakPoints command
         :param buffname:
-        """
+        '''
         if not buffname:
             buffname = self.cbname
         __logger__.debug('refreshing breakpoints for file: %s', (buffname))
@@ -273,23 +327,19 @@ class NvimPudb(object):
     # set sync so that the current buffer can't change until we are done
     @neovim.autocmd('BufReadPost', pattern='*.py', sync=True)
     def on_bufenter(self, buffname=None):
-        """on_bufenter
+        '''on_bufenter
         expose the BufReadPost autocommand
         :param buffname:
-        """
+        '''
         if not buffname:
             buffname = self.cbname
         __logger__.debug('Autoprepping file "%s"', (buffname))
-        self.setup_once()
+        self.firstrun()
         self.update_buffer(buffname)
 
-    def setup_once(self):
-        """setup_once
-        setup function for the first time this object is used
-        """
-        if self._first_eval:
+    def firstrun(self):
+        if self.__firstrun__:
             return
-        __logger__.debug('Setting up for the first and only time.')
+        self.__firstrun__ = True
         self.nvim.command(':sign define {} text={} texthl={}'.format(
-            self._sgnname, self._bpsymbol, self._hlgroup))
-        self._first_eval = True
+            self.sgnname, self.bpsymbol, self.hlgroup))
