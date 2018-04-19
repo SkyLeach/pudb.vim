@@ -3,13 +3,15 @@
 ### Integration between vim8/neovim and pudb.
 
 ### Adds new commands:
-* **ToggleBreakPoint** - Toggles a breakpoint on the current line (requires ft=python)
-* **ClearAllBreakpoints** - Clears all currently set breakpoitns on the current file (requires ft=python)
-* **UpdateBreakPoints** - Updates any breakpoints set outside of neovim (such as in the debugger itself)
-* **PudbStatus** - Shows a status printout (in `:messages`) for the plugin
+* **PUDBToggleBreakPoint** - Toggles a breakpoint on the current line (requires ft=python)
+* **PUDBClearAllBreakpoints** - Clears all currently set breakpoitns on the current file (requires ft=python)
+* **PUDBUpdateBreakPoints** - Updates any breakpoints set outside of neovim (such as in the debugger itself)
+* **PUDBStatus** - Shows a status printout (in `:messages`) for the plugin
 > **Note**: while most of these commands are common between Vim8 and neovim, the PudbStatus command is only in NeoVim.  This is because NeoVim has rplugin instance objects that retain state (more efficient and powerful) but vim8 plugins use inline python and can't retain state.
-* **LaunchDebuggerTab** - Launches pudb in a new tab.
+* **PUDBLaunchDebuggerTab** - Launches pudb in a new tab.
 > **Note**: Vim8 support at least partly broken in tmux and MacVim, most probably because of how they are setting up the TERM settings.
+* **PUDBSetEntrypointVENV**: Sets both the entrypoint (script to be run) and the python to use (virtual environment) if it can be determined.  This can be very important for breakpoints as well, as different virtual environments will have different PUDB debuggers and possibly different lists of breakpoints.  Make sure you call `:PUDBUpdateBreakPoints` on any file after changing the launcher.  If you merely toggle a breakpoint then any other breakpoints will be written out to pudb using the current buffer.
+* **PUDBSetEntrypoint**: Sets only the entrypoint (script to be run) when you launch the debugger.  Useful if your breakpoint is in a different file.
 
 
 ### Accepts options configuration variables:

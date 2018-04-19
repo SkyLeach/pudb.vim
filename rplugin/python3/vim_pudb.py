@@ -72,7 +72,7 @@ class NvimPudb(object):
         return self.nvim.vars.get('pudb_highlight_group', 'debug')
 
     # @hlgroup.setter
-    def hset_lgroup(self, hlgroup):
+    def set_lgroup(self, hlgroup):
         self.nvim.command("let g:pudb_highlight_group='{}'".format(hlgroup))
 
     # @property
@@ -181,7 +181,7 @@ class NvimPudb(object):
             self._bps_placed[buffname].index(
                 signid(buffname, lineno)))
 
-    @neovim.command("ClearAllBreakpoints", sync=False)
+    @neovim.command("PUDBClearAllBreakpoints", sync=False)
     def clear_all_bps(self, buffname=None):
         """clear_all_bps
         removes all signs from the buffer and all breakpoints from pudb
@@ -231,7 +231,7 @@ class NvimPudb(object):
             if not self.has_breakpoint(bpt.filename, bpt.lineno):
                 self.place_sign(bpt.filename, bpt.lineno)
 
-    @neovim.command("LaunchDebuggerTab", sync=True)
+    @neovim.command("PUDBLaunchDebuggerTab", sync=True)
     def launchdebugtab(self):
         # if necessary, get the virtual env setup
         # autocmd FileType python nnoremap <silent> <leader>td :tabnew
@@ -246,7 +246,7 @@ class NvimPudb(object):
         # we have to wait for the terminal to be opened...
         self.nvim.command('startinsert')
 
-    @neovim.command("PudbStatus", sync=False)
+    @neovim.command("PUDBStatus", sync=False)
     def pudb_status(self):
         """pudb_status
         print the status of this plugin to :messages in neovim"""
@@ -255,7 +255,7 @@ class NvimPudb(object):
         __logger__.info('{}\n'.format(pprint.pformat(
             [type(self), self._hlgroup, self.nvim])))
 
-    @neovim.command("ToggleBreakPoint", sync=False)
+    @neovim.command("PUDBToggleBreakPoint", sync=False)
     def toggle_breakpoint_cmd(self, buffname=None):
         """toggle_breakpoint_cmd
         toggles a sign&mark from off to on or none to one
@@ -323,7 +323,7 @@ class NvimPudb(object):
                 self.entrypoint(),
                 self.launcher()))
 
-    @neovim.command("UpdateBreakPoints", sync=False)
+    @neovim.command("PUDBUpdateBreakPoints", sync=False)
     def update_breakpoints_cmd(self, buffname=None):
         '''update_breakpoints_cmd
         expose the UpdateBreakPoints command
