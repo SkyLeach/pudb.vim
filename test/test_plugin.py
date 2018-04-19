@@ -64,8 +64,9 @@ class TestPUDBPlugin(unittest.TestCase):
         '''
         # try embedding nvim in order to run the tests
         # os.environ['NVIM_LISTEN_ADDRESS']=
-        nvim = neovim.attach('child', argv=["/usr/bin/env", "nvim", "--embed"])
-        # nvim = neovim.attach('socket', path='/var/folders/kt/yxsj572j6z18h6gq073_zvdr0000gn/T/nvim5K7tM0/0')
+        # nvim = neovim.attach('child',
+        #     argv=["/usr/bin/env", "nvim", "--embed"])
+        nvim = neovim.attach('socket', path='/var/folders/kt/yxsj572j6z18h6gq073_zvdr0000gn/T/nvim1jLDkU/0')
         myplug = vim_pudb.NvimPudb(nvim)
         tv = myplug.sgnname()
         self.assertIsNotNone(tv)
@@ -98,6 +99,9 @@ class TestPUDBPlugin(unittest.TestCase):
         myplug.set_entrypoint(tv)
         tv = myplug.cbname()
         self.assertIsNotNone(tv)
+        # test setting the venv
+        myplug.set_curbuff_as_entrypoint_with_venv(
+            buffname='/Users/magregor/src/pudb.vim/test/test_plugin.py')
 
 
 # stand-alone test execution

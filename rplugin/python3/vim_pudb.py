@@ -15,7 +15,7 @@ import neovim
 import pudb
 __logger__ = logging.getLogger('pudb.vim')
 
-pprint.pprint(os.path)
+
 class NvimOutLogHandler(logging.Handler):
     """NvimOutLogHandler
     python logging handler to output messages to the neovim user
@@ -277,17 +277,23 @@ class NvimPudb(object):
             buffname = self.cbname()
 
         def getpath(project):
-            with open(os.path.join(project, '.project')) as pfile:
-                return pfile.readline().strip()
+            try:
+                with open(os.path.join(project, '.project')) as pfile:
+                    return pfile.readline().strip()
+            except Exception:
+                # probably no .project file
+                return '.'
 
         def projectiter(ppaths):
             for project in ppaths:
                 yield getpath(project)
 
         for root, dirs, files in os.walk(os.path.expanduser(
-                '~/virtualenvs')):
+                '~/.virtualenvs')):
             venvs = set(dirs).difference(('bin', 'lib', 'include'))
-            for ppath in projectiter(venvs):
+            # venvs = list(map(lambda x: os.path.join(root,x), venvs))
+            for ppath in projectiter(
+                    map(lambda x: os.path.join(root, x), venvs)):
                 if buffname.startswith(os.path.join(root, ppath)):
                     return os.path.join(os.path.join(
                         root, ppath), 'bin', 'python')
