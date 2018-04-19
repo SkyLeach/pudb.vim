@@ -15,7 +15,7 @@ import neovim
 import pudb
 __logger__ = logging.getLogger('pudb.vim')
 
-
+pprint.pprint(os.path)
 class NvimOutLogHandler(logging.Handler):
     """NvimOutLogHandler
     python logging handler to output messages to the neovim user
@@ -77,11 +77,19 @@ class NvimPudb(object):
 
     # @property
     def launcher(self):
-        return self.nvim.vars.get('pudb_python_launcher', 'python')
+        return self.nvim.vars.get('pudb_python_launcher', self.nvim_python3())
 
     # @launcher.setter
     def set_launcher(self, launcher):
         self.nvim.command("let g:pudb_python_launcher='{}'".format(launcher))
+
+    # @property
+    def nvim_python(self):
+        return self.nvim.vars.get('python_host_prog', 'python')
+
+    # @property
+    def nvim_python3(self):
+        return self.nvim.vars.get('python3_host_prog', self.nvim_python())
 
     # @property
     def entrypoint(self):
@@ -102,17 +110,19 @@ class NvimPudb(object):
         'Breakpoint',
         ['filename', 'lineno'])
 
-    __firstrun__ = False
-
     def __init__(self, nvim):
         # set our nvim hook first...
         self.nvim = nvim
         # update the __logger__ to use neovim for messages
         nvimhandler = NvimOutLogHandler(nvim)
-        nvimhandler.setLevel(logging.INFO)
+        # nvimhandler.setLevel(logging.INFO)
+        nvimhandler.setLevel(logging.DEBUG)
+        __logger__.setLevel(logging.DEBUG)
         __logger__.addHandler(nvimhandler)
         # define our sign command
         super().__init__()
+        self.nvim.command(':sign define {} text={} texthl={}'.format(
+            self.sgnname(), self.bpsymbol(), self.hlgroup()))
 
     def iter_breakpoints(self, buffname=None):
         """iter_breakpoints
@@ -140,7 +150,7 @@ class NvimPudb(object):
         signcmd = "sign place {} line={} name={} file={}".format(
             signid(buffname, lineno),
             lineno,
-            self.sgnname,
+            self.sgnname(),
             buffname)
         __logger__.debug(signcmd)
         self.nvim.command(signcmd)
@@ -228,8 +238,8 @@ class NvimPudb(object):
         # term://source ${HOME}/.virtualenvs/$(cat .dbve)/bin/activate
         # && python -mpudb %<CR>:startinsert<CR>
         new_term_tab_cmd = 'tabnew term://{} -m pudb.run {}'.format(
-            self.launcher,
-            self.entrypoint)
+            self.launcher(),
+            self.entrypoint())
         __logger__.info('Starting debug tab with command:\n    {}'.format(
             new_term_tab_cmd))
         self.nvim.command(new_term_tab_cmd)
@@ -274,13 +284,14 @@ class NvimPudb(object):
             for project in ppaths:
                 yield getpath(project)
 
-        for root, dirs, files in os.path.walk(os.path.expanduser(
+        for root, dirs, files in os.walk(os.path.expanduser(
                 '~/virtualenvs')):
             venvs = set(dirs).difference(('bin', 'lib', 'include'))
             for ppath in projectiter(venvs):
                 if buffname.startswith(os.path.join(root, ppath)):
-                    return os.path.join(ppath, 'bin', 'python')
-        return self.launcher
+                    return os.path.join(os.path.join(
+                        root, ppath), 'bin', 'python')
+        return self.launcher()
 
     @neovim.command("PUDBSetEntrypointVENV", sync=False)
     def set_curbuff_as_entrypoint_with_venv(self, buffname=None):
@@ -305,12 +316,12 @@ class NvimPudb(object):
         if not buffname:
             buffname = self.cbname()
         if set_venv:
-            self.set_launcher(self.get_buffer_venv(buffname))
+            self.set_launcher(self.get_buffer_venv_launcher(buffname))
         self.set_entrypoint(buffname)
         __logger__.info(
             'Settings {} as pudb entrypoint with python set as {}'.format(
-                self.entrypoint,
-                self.launcher))
+                self.entrypoint(),
+                self.launcher()))
 
     @neovim.command("UpdateBreakPoints", sync=False)
     def update_breakpoints_cmd(self, buffname=None):
@@ -334,12 +345,4 @@ class NvimPudb(object):
         if not buffname:
             buffname = self.cbname()
         __logger__.debug('Autoprepping file "%s"', (buffname))
-        self.firstrun()
         self.update_buffer(buffname)
-
-    def firstrun(self):
-        if self.__firstrun__:
-            return
-        self.__firstrun__ = True
-        self.nvim.command(':sign define {} text={} texthl={}'.format(
-            self.sgnname, self.bpsymbol, self.hlgroup))
