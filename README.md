@@ -15,9 +15,11 @@
 
 
 ### Accepts options configuration variables:
-* `pudb_python` - Which python to use to launch pudb.  Can integrate with virtualenvs.
+* `pudb_python_launcher` - Which python to use to launch pudb.  Can integrate with virtualenvs, but only if the .virtualenv .project file points to a path containing the `pudb_entry_point`.
 * `pudb_entry_point` - Which script to use to 'enter' your program in debug mode.  If not set, the current buffer will be used.
-* `pudb_breakpoint_symbol` - The symbol representation
+* `pudb_breakpoint_symbol` - The symbol representation of the breakpoint.  Defaults to `!`
+* `pudb_sign_name` - The symbol group name.  Defaults to `pudbbp`.
+* `pudb_highlight_group` - The default highlight group.  Defaults to `debug`.
 
 For example:
 ```vim
