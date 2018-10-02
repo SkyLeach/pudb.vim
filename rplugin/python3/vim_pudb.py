@@ -253,7 +253,7 @@ class NvimPudb(object):
         __logger__.info('{}\n'.format(
             pprint.pformat(self._bps_placed)))
         __logger__.info('{}\n'.format(pprint.pformat(
-            [type(self), self._hlgroup, self.nvim])))
+            [type(self), self.hlgroup(), self.nvim])))
 
     @neovim.command("PUDBToggleBreakPoint", sync=False)
     def toggle_breakpoint_cmd(self, buffname=None):
