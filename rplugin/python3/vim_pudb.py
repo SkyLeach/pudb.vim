@@ -121,8 +121,6 @@ class NvimPudb(object):
         __logger__.addHandler(nvimhandler)
         # define our sign command
         super().__init__()
-        self.nvim.command(':sign define {} text={} texthl={}'.format(
-            self.sgnname(), self.bpsymbol(), self.hlgroup()))
 
     def iter_breakpoints(self, buffname=None):
         """iter_breakpoints
@@ -237,6 +235,10 @@ class NvimPudb(object):
         # autocmd FileType python nnoremap <silent> <leader>td :tabnew
         # term://source ${HOME}/.virtualenvs/$(cat .dbve)/bin/activate
         # && python -mpudb %<CR>:startinsert<CR>
+
+        self.nvim.command(':sign define {} text={} texthl={}'.format(
+        self.sgnname(), self.bpsymbol(), self.hlgroup()))
+
         new_term_tab_cmd = 'tabnew term://{} -m pudb.run {}'.format(
             self.launcher(),
             self.entrypoint())
@@ -253,7 +255,7 @@ class NvimPudb(object):
         __logger__.info('{}\n'.format(
             pprint.pformat(self._bps_placed)))
         __logger__.info('{}\n'.format(pprint.pformat(
-            [type(self), self._hlgroup, self.nvim])))
+            [type(self), self.hlgroup(), self.nvim])))
 
     @neovim.command("PUDBToggleBreakPoint", sync=False)
     def toggle_breakpoint_cmd(self, buffname=None):
