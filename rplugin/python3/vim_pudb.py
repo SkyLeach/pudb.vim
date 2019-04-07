@@ -20,12 +20,11 @@ class NvimOutLogHandler(logging.Handler):
     """NvimOutLogHandler
     python logging handler to output messages to the neovim user
     """
-    _nvim = None
-    _terminator = '\n'
 
     def __init__(self, nvim, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._nvim = nvim
+        self._terminator = '\n'
 
     def emit(self, record):
         self._nvim.out_write(self.format(record))
@@ -48,8 +47,6 @@ class NvimPudb(object):
     """NvimPudb
     neovim rplugin class to manage pudb debugger from neovim code.
     """
-    nvim        = None
-    _bps_placed = dict()  # type: Dict[str,List]
 
     # @property
     def sgnname(self):
@@ -106,13 +103,13 @@ class NvimPudb(object):
         """
         return self.nvim.current.buffer.name
 
-    pudbbp = collections.namedtuple(
-        'Breakpoint',
-        ['filename', 'lineno'])
-
-    def __init__(self, nvim):
+    def __init__(self, nvim=None):
         # set our nvim hook first...
         self.nvim = nvim
+        self._status_info = dict()
+        self._bps_placed = dict()  # type: Dict[str,List]
+        self.pudbbp = collections.namedtuple('Breakpoint',
+                                             ['filename', 'lineno'])
         # update the __logger__ to use neovim for messages
         nvimhandler = NvimOutLogHandler(nvim)
         # nvimhandler.setLevel(logging.INFO)
@@ -120,7 +117,7 @@ class NvimPudb(object):
         __logger__.setLevel(logging.DEBUG)
         __logger__.addHandler(nvimhandler)
         # define our sign command
-        super().__init__()
+        # super().__init__()
 
     def iter_breakpoints(self, buffname=None):
         """iter_breakpoints
@@ -248,8 +245,9 @@ class NvimPudb(object):
     def pudb_status(self):
         """pudb_status
         print the status of this plugin to :messages in neovim"""
-        __logger__.info('{}\n'.format(
-            pprint.pformat(self._bps_placed)))
+        for key in self._bps_placed:
+            self._status_info[key] = [x // 10 for x in self._bps_placed[key]]
+        __logger__.info('{}\n'.format(pprint.pformat(self._status_info)))
         __logger__.info('{}\n'.format(pprint.pformat(
             [type(self), self.hlgroup(), self.nvim])))
 
