@@ -121,8 +121,6 @@ class NvimPudb(object):
         __logger__.addHandler(nvimhandler)
         # define our sign command
         super().__init__()
-        self.nvim.command(':sign define {} text={} texthl={}'.format(
-            self.sgnname(), self.bpsymbol(), self.hlgroup()))
 
     def iter_breakpoints(self, buffname=None):
         """iter_breakpoints
@@ -351,4 +349,6 @@ class NvimPudb(object):
         if not buffname:
             buffname = self.cbname()
         __logger__.debug('Autoprepping file "%s"', (buffname))
+        self.nvim.command(':sign define {} text={} texthl={}'.format(
+            self.sgnname(), self.bpsymbol(), self.hlgroup()))
         self.update_buffer(buffname)
