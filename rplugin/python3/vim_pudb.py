@@ -338,10 +338,24 @@ class NvimPudb(object):
         self.update_buffer(buffname)
 
     # set sync so that the current buffer can't change until we are done
-    @neovim.autocmd('BufEnter', pattern='*.py', sync=True)
-    def on_bufenter(self, buffname=None):
-        '''on_bufenter
+    @neovim.autocmd('BufRead', pattern='*.py', sync=True)
+    def on_bufread(self, buffname=None):
+        '''on_bufread
         expose the BufReadPost autocommand
+        :param buffname:
+        '''
+        if not buffname:
+            buffname = self.cbname()
+        __logger__.debug('Autoprepping file "%s"', (buffname))
+        self.nvim.command(':sign define {} text={} texthl={}'.format(
+            self.sgnname(), self.bpsymbol(), self.hlgroup()))
+        self.update_buffer(buffname)
+
+    # set sync so that the current buffer can't change until we are done
+    @neovim.autocmd('BufNewFile', pattern='*.py', sync=True)
+    def on_bufnewfile(self, buffname=None):
+        '''on_bufnewfile
+        expose the BufNewFile autocommand
         :param buffname:
         '''
         if not buffname:
