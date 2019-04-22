@@ -353,7 +353,7 @@ class NvimPudb(object):
 
     # set sync so that the current buffer can't change until we are done
     @neovim.autocmd('BufNewFile', pattern='*.py', sync=True)
-    def on_bufenter(self, buffname=None):
+    def on_bufnewfile(self, buffname=None):
         '''on_bufenter
         expose the BufReadPost autocommand
         :param buffname:
