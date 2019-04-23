@@ -172,10 +172,11 @@ class NvimPudb(object):
         """
         if not self.has_breakpoint(buffname, lineno):
             return
-        vimmsg = 'sign unplace {} file={}'.format(
-            signid(buffname, lineno),
-            buffname)
-        self.nvim.command(vimmsg)
+        if self.toggle_sign == 0:
+            vimmsg = 'sign unplace {} file={}'.format(
+                signid(buffname, lineno),
+                buffname)
+            self.nvim.command(vimmsg)
         self._bps_placed[buffname].pop(
             self._bps_placed[buffname].index(
                 signid(buffname, lineno)))
