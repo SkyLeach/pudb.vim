@@ -97,6 +97,14 @@ class NvimPudb(object):
         self.nvim.command("let g:pudb_entry_point='{}'".format(entrypoint))
 
     # @property
+    def pudb_signify(self):
+        return self.nvim.vars.get('pudb_signify', 0)
+
+    # @entrypoint.setter
+    def set_pudb_signify(self, pudb_signify):
+        self.nvim.command("let g:pudb_signify='{}'".format(pudb_signify))
+
+    # @property
     def cbname(self):
         """cbname
         returns the current buffer's name attribute
