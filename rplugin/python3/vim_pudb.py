@@ -118,6 +118,7 @@ class NvimPudb(object):
         self._bps_placed = dict()  # type: Dict[str,List]
         self.pudbbp = collections.namedtuple('Breakpoint',
                                              ['filename', 'lineno'])
+        self.toggle_sign = 0
         # update the __logger__ to use neovim for messages
         nvimhandler = NvimOutLogHandler(nvim)
         # nvimhandler.setLevel(logging.INFO)
@@ -150,12 +151,13 @@ class NvimPudb(object):
         # don't place it if it has already been placed
         if self.has_breakpoint(buffname, lineno):
             return self.pudbbp(buffname, lineno)
-        signcmd = "sign place {} line={} name={} file={}".format(
-            signid(buffname, lineno),
-            lineno,
-            self.sgnname(),
-            buffname)
-        self.nvim.command(signcmd)
+        if self.toggle_sign == 1:
+            signcmd = "sign place {} line={} name={} file={}".format(
+                signid(buffname, lineno),
+                lineno,
+                self.sgnname(),
+                buffname)
+            self.nvim.command(signcmd)
         if buffname in self._bps_placed:
             self._bps_placed[buffname].append(signid(buffname, lineno))
         else:
@@ -193,36 +195,31 @@ class NvimPudb(object):
         self._bps_placed[buffname] = []
         self.update_pudb_breakpoints(buffname)
 
-    @neovim.command("PUDBClearAllSigns", sync=False)
-    def clear_all_signs(self, buffname=None):
-        """clear_all_signs
+    @neovim.command("PUDBToggleAllSigns", sync=False)
+    def toggle_all_signs(self, buffname=None):
+        """toggle_all_signs
         removes all signs from the buffer
         :param buffname:
         """
         if not buffname:
             buffname = self.cbname()
-        for key in self._bps_placed:
-            for i in self._bps_placed[key]:
-                self.nvim.command('sign unplace {} file={}'.format(i,
-                                                                   buffname))
-        if self.pudb_signify():
-            self.nvim.command('SignifyToggle')
-
-    @neovim.command("PUDBRestoreAllSigns", sync=False)
-    def restore_all_signs(self, buffname=None):
-        """restore_all_signs
-        restores all signs from the buffer
-        :param buffname:
-        """
-        if not buffname:
-            buffname = self.cbname()
-        for key in self._bps_placed:
-            for i in self._bps_placed[key]:
-                self.nvim.command(
-                    'sign place {} line={} name={} file={}'.format(
-                        i, i // 10, self.sgnname(), buffname))
-        if self.pudb_signify():
-            self.nvim.command('SignifyToggle')
+        if self.toggle_sign == 0:
+            self.toggle_sign = 1
+            if self.pudb_signify():
+                self.nvim.command('SignifyDisable')
+            for key in self._bps_placed:
+                for i in self._bps_placed[key]:
+                    self.nvim.command(
+                        'sign place {} line={} name={} file={}'.format(
+                            i, i // 10, self.sgnname(), buffname))
+        else:
+            self.toggle_sign = 0
+            for key in self._bps_placed:
+                for i in self._bps_placed[key]:
+                    self.nvim.command(
+                        'sign unplace {} file={}'.format(i, buffname))
+            if self.pudb_signify():
+                self.nvim.command('SignifyEnable')
 
     def has_breakpoint(self, buffname, lineno):
         if buffname in self._bps_placed and \
