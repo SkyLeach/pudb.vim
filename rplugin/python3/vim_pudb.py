@@ -147,7 +147,6 @@ class NvimPudb(object):
             lineno,
             self.sgnname(),
             buffname)
-        __logger__.debug(signcmd)
         self.nvim.command(signcmd)
         if buffname in self._bps_placed:
             self._bps_placed[buffname].append(signid(buffname, lineno))
@@ -163,14 +162,9 @@ class NvimPudb(object):
         """
         if not self.has_breakpoint(buffname, lineno):
             return
-        __logger__.info(
-            'removing sign %d at line: %d',
-            signid(buffname, lineno),
-            lineno)
         vimmsg = 'sign unplace {} file={}'.format(
             signid(buffname, lineno),
             buffname)
-        __logger__.debug(vimmsg)
         self.nvim.command(vimmsg)
         self._bps_placed[buffname].pop(
             self._bps_placed[buffname].index(
@@ -186,9 +180,6 @@ class NvimPudb(object):
             buffname = self.cbname()
         self.nvim.command('sign unplace * file={}'.format(buffname))
         self._bps_placed[buffname] = []
-        __logger__.debug(
-            'there should be no signs for this buffer:\n    %s',
-            pprint.pformat(self._bps_placed[buffname]))
         self.update_pudb_breakpoints(buffname)
 
     def has_breakpoint(self, buffname, lineno):
@@ -209,10 +200,6 @@ class NvimPudb(object):
             else:
                 # make sure we pass on anything we aren't messing with
                 bps.append(bpt)
-        __logger__.debug(
-            'Updating breakpoints in pudb:\n    %s',
-            pprint.pformat(
-                list(map(lambda x: Breakpoint(x.filename, x.lineno), bps))))
         pudb.settings.save_breakpoints(
             list(map(lambda x: Breakpoint(x.filename, x.lineno), bps)))
 
@@ -235,8 +222,6 @@ class NvimPudb(object):
         new_term_tab_cmd = 'tabnew term://{} -m pudb.run {}'.format(
             self.launcher(),
             self.entrypoint())
-        __logger__.info('Starting debug tab with command:\n    {}'.format(
-            new_term_tab_cmd))
         self.nvim.command(new_term_tab_cmd)
         # we have to wait for the terminal to be opened...
         self.nvim.command('startinsert')
@@ -247,9 +232,10 @@ class NvimPudb(object):
         print the status of this plugin to :messages in neovim"""
         for key in self._bps_placed:
             self._status_info[key] = [x // 10 for x in self._bps_placed[key]]
-        __logger__.info('{}\n'.format(pprint.pformat(self._status_info)))
-        __logger__.info('{}\n'.format(pprint.pformat(
-            [type(self), self.hlgroup(), self.nvim])))
+        status_echo_cmd = 'echo "{}\n{}"'.format(
+            pprint.pformat(self._status_info),
+            pprint.pformat([type(self), self.hlgroup(), self.nvim]))
+        self.nvim.command(status_echo_cmd)
 
     @neovim.command("PUDBToggleBreakPoint", sync=False)
     def toggle_breakpoint_cmd(self, buffname=None):
@@ -261,10 +247,8 @@ class NvimPudb(object):
             buffname = self.cbname()
         row = self.nvim.current.window.cursor[0]
         if self.has_breakpoint(buffname, row):
-            __logger__.debug('toggle remove.')
             self.remove_sign(buffname, row)
         else:
-            __logger__.debug('toggle add.')
             self.place_sign(buffname, row)
         self.update_pudb_breakpoints(buffname)
 
@@ -320,10 +304,6 @@ class NvimPudb(object):
         if set_venv:
             self.set_launcher(self.get_buffer_venv_launcher(buffname))
         self.set_entrypoint(buffname)
-        __logger__.info(
-            'Settings {} as pudb entrypoint with python set as {}'.format(
-                self.entrypoint(),
-                self.launcher()))
 
     @neovim.command("PUDBUpdateBreakPoints", sync=False)
     def update_breakpoints_cmd(self, buffname=None):
@@ -333,7 +313,6 @@ class NvimPudb(object):
         '''
         if not buffname:
             buffname = self.cbname()
-        __logger__.debug('refreshing breakpoints for file: %s', (buffname))
         # remove existing signs if any
         self.update_buffer(buffname)
 
@@ -346,7 +325,6 @@ class NvimPudb(object):
         '''
         if not buffname:
             buffname = self.cbname()
-        __logger__.debug('Autoprepping file "%s"', (buffname))
         self.nvim.command(':sign define {} text={} texthl={}'.format(
             self.sgnname(), self.bpsymbol(), self.hlgroup()))
         self.update_buffer(buffname)
@@ -360,7 +338,6 @@ class NvimPudb(object):
         '''
         if not buffname:
             buffname = self.cbname()
-        __logger__.debug('Autoprepping file "%s"', (buffname))
         self.nvim.command(':sign define {} text={} texthl={}'.format(
             self.sgnname(), self.bpsymbol(), self.hlgroup()))
         self.update_buffer(buffname)
