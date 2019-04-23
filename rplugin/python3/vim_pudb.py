@@ -185,6 +185,33 @@ class NvimPudb(object):
         self._bps_placed[buffname] = []
         self.update_pudb_breakpoints(buffname)
 
+    @neovim.command("PUDBClearAllSigns", sync=False)
+    def clear_all_signs(self, buffname=None):
+        """clear_all_signs
+        removes all signs from the buffer
+        :param buffname:
+        """
+        if not buffname:
+            buffname = self.cbname()
+        for key in self._bps_placed:
+            for i in self._bps_placed[key]:
+                self.nvim.command('sign unplace {} file={}'.format(i,
+                                                                   buffname))
+
+    @neovim.command("PUDBRestoreAllSigns", sync=False)
+    def restore_all_signs(self, buffname=None):
+        """restore_all_signs
+        restores all signs from the buffer
+        :param buffname:
+        """
+        if not buffname:
+            buffname = self.cbname()
+        for key in self._bps_placed:
+            for i in self._bps_placed[key]:
+                self.nvim.command(
+                    'sign place {} line={} name={} file={}'.format(
+                        i, i // 10, self.sgnname(), buffname))
+
     def has_breakpoint(self, buffname, lineno):
         if buffname in self._bps_placed and \
                 signid(buffname, lineno) in self._bps_placed[buffname]:
