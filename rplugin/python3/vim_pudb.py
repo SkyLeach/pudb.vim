@@ -118,7 +118,7 @@ class NvimPudb(object):
         self._bps_placed = dict()  # type: Dict[str,List]
         self.pudbbp = collections.namedtuple('Breakpoint',
                                              ['filename', 'lineno'])
-        self.toggle_sign = 0
+        self.toggle_sign = False
         # update the __logger__ to use neovim for messages
         nvimhandler = NvimOutLogHandler(nvim)
         # nvimhandler.setLevel(logging.INFO)
@@ -151,7 +151,7 @@ class NvimPudb(object):
         # don't place it if it has already been placed
         if self.has_breakpoint(buffname, lineno):
             return self.pudbbp(buffname, lineno)
-        if self.toggle_sign == 1:
+        if self.toggle_sign:
             signcmd = "sign place {} line={} name={} file={}".format(
                 signid(buffname, lineno),
                 lineno,
@@ -172,7 +172,7 @@ class NvimPudb(object):
         """
         if not self.has_breakpoint(buffname, lineno):
             return
-        if self.toggle_sign == 0:
+        if self.toggle_sign:
             vimmsg = 'sign unplace {} file={}'.format(
                 signid(buffname, lineno),
                 buffname)
@@ -203,8 +203,8 @@ class NvimPudb(object):
         """
         if not buffname:
             buffname = self.cbname()
-        if self.toggle_sign == 0:
-            self.toggle_sign = 1
+        if not self.toggle_sign:
+            self.toggle_sign = True
             if self.pudb_signify():
                 self.nvim.command('SignifyDisable')
             for key in self._bps_placed:
@@ -213,7 +213,7 @@ class NvimPudb(object):
                         'sign place {} line={} name={} file={}'.format(
                             i, i // 10, self.sgnname(), buffname))
         else:
-            self.toggle_sign = 0
+            self.toggle_sign = False
             for key in self._bps_placed:
                 for i in self._bps_placed[key]:
                     self.nvim.command(
