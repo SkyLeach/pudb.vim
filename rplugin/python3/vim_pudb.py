@@ -189,9 +189,10 @@ class NvimPudb(object):
         """
         if not buffname:
             buffname = self.cbname()
-        for i in self._bps_placed[buffname]:
-            self.nvim.command('sign unplace {} file={}'.format(i,
-                                                               buffname))
+        if buffname in self._bps_placed:
+            for i in self._bps_placed[buffname]:
+                self.nvim.command('sign unplace {} file={}'.format(i,
+                                                                   buffname))
         self._bps_placed[buffname] = []
         self.update_pudb_breakpoints(buffname)
 
