@@ -249,9 +249,15 @@ class NvimPudb(object):
         :param buffname:
         :param toggle_ln:
         """
-        for bpt in self.iter_breakpoints(buffname):
-            if not self.has_breakpoint(bpt.filename, bpt.lineno):
-                self.place_sign(bpt.filename, bpt.lineno)
+        if self.toggle_sign:
+            for key in self._bps_placed:
+                for i in self._bps_placed[key]:
+                    self.nvim.command(
+                        'sign unplace {} file={}'.format(i, buffname))
+                for i in self._bps_placed[key]:
+                    self.nvim.command(
+                        'sign place {} line={} name={} file={}'.format(
+                            i, i // 10, self.sgnname(), buffname))
 
     @neovim.command("PUDBLaunchDebuggerTab", sync=True)
     def launchdebugtab(self):
