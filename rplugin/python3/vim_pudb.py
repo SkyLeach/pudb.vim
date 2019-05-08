@@ -416,3 +416,15 @@ class NvimPudb(object):
             self.toggle_sign_on()
         else:
             self.toggle_sign_off()
+
+    @neovim.autocmd('TextChanged', pattern='*.py', sync=False)
+    def on_text_change(self, buffname=None):
+        if not buffname:
+            buffname = self.cbname()
+        self.update_breakpoints_cmd(buffname)
+
+    @neovim.autocmd('InsertLeave', pattern='*.py', sync=False)
+    def on_insert_leave(self, buffname=None):
+        if not buffname:
+            buffname = self.cbname()
+        self.update_breakpoints_cmd(buffname)
