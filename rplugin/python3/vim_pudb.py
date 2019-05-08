@@ -372,6 +372,8 @@ class NvimPudb(object):
         '''
         if not buffname:
             buffname = self.cbname()
+        if buffname not in self._toggle_status:
+            self._toggle_status[buffname] = False
         self.nvim.command(':sign define {} text={} texthl={}'.format(
             self.sgnname(), self.bpsymbol(), self.hlgroup()))
         self.update_buffer(buffname)
@@ -385,6 +387,8 @@ class NvimPudb(object):
         '''
         if not buffname:
             buffname = self.cbname()
+        if buffname not in self._toggle_status:
+            self._toggle_status[buffname] = False
         self.nvim.command(':sign define {} text={} texthl={}'.format(
             self.sgnname(), self.bpsymbol(), self.hlgroup()))
         self.update_buffer(buffname)
