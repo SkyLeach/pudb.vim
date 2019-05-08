@@ -392,3 +392,17 @@ class NvimPudb(object):
         self.nvim.command(':sign define {} text={} texthl={}'.format(
             self.sgnname(), self.bpsymbol(), self.hlgroup()))
         self.update_buffer(buffname)
+
+    @neovim.autocmd('BufEnter', pattern='*.py', sync=False)
+    def on_buf_enter(self, buffname=None):
+        '''on_buf_enter
+        expose the BufEnter autocommand
+        :param buffname:
+        '''
+        buffname = self.cbname()
+        if buffname not in self._toggle_status:
+            self._toggle_status[buffname] = False
+        if self._toggle_status[buffname]:
+            self.toggle_sign_on()
+        else:
+            self.toggle_sign_off()
