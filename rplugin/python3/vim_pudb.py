@@ -114,6 +114,7 @@ class NvimPudb(object):
     def __init__(self, nvim=None):
         # set our nvim hook first...
         self.nvim = nvim
+        self._toggle_status = dict()
         self._status_info = dict()
         self._bps_placed = dict()  # type: Dict[str,List]
         self.pudbbp = collections.namedtuple('Breakpoint',
