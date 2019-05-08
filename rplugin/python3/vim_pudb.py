@@ -287,7 +287,8 @@ class NvimPudb(object):
         """pudb_status
         print the status of this plugin to :messages in neovim"""
         for key in self._bps_placed:
-            self._status_info[key] = [x // 10 for x in self._bps_placed[key]]
+            self._status_info[key] = [[x // 10 for x in self._bps_placed[key]],
+                                      self._toggle_status[key]]
         status_echo_cmd = 'echo "{}\n{}"'.format(
             pprint.pformat(self._status_info),
             pprint.pformat([type(self), self.hlgroup(), self.nvim]))
