@@ -206,22 +206,32 @@ class NvimPudb(object):
         if not buffname:
             buffname = self.cbname()
         if not self.toggle_sign:
-            self.toggle_sign = True
-            if self.pudb_signify():
-                self.nvim.command('SignifyDisable')
-            for key in self._bps_placed:
-                for i in self._bps_placed[key]:
-                    self.nvim.command(
-                        'sign place {} line={} name={} file={}'.format(
-                            i, i // 10, self.sgnname(), buffname))
+            self.toggle_sign_on(buffname)
         else:
-            self.toggle_sign = False
-            for key in self._bps_placed:
-                for i in self._bps_placed[key]:
-                    self.nvim.command(
-                        'sign unplace {} file={}'.format(i, buffname))
-            if self.pudb_signify():
-                self.nvim.command('SignifyEnable')
+            self.toggle_sign_off(buffname)
+
+    def toggle_sign_on(self, buffname=None):
+        if not buffname:
+            buffname = self.cbname()
+        self.toggle_sign = True
+        self._toggle_status[buffname] = True
+        if self.pudb_signify():
+            self.nvim.command('SignifyDisable')
+        for i in self._bps_placed[buffname]:
+            self.nvim.command(
+                'sign place {} line={} name={} file={}'.format(
+                    i, i // 10, self.sgnname(), buffname))
+
+    def toggle_sign_off(self, buffname=None):
+        if not buffname:
+            buffname = self.cbname()
+        self.toggle_sign = False
+        self._toggle_status[buffname] = False
+        for i in self._bps_placed[buffname]:
+            self.nvim.command(
+                'sign unplace {} file={}'.format(i, buffname))
+        if self.pudb_signify():
+            self.nvim.command('SignifyEnable')
 
     def has_breakpoint(self, buffname, lineno):
         if buffname in self._bps_placed and \
