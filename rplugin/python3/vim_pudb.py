@@ -410,6 +410,8 @@ class NvimPudb(object):
         :param buffname:
         '''
         buffname = self.cbname()
+        if buffname[:7] == 'term://':
+            return
         if buffname not in self._toggle_status:
             self._toggle_status[buffname] = False
         if self._toggle_status[buffname]:
