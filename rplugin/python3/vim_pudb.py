@@ -407,13 +407,14 @@ class NvimPudb(object):
             self.sgnname(), self.bpsymbol(), self.hlgroup()))
         self.update_buffer(buffname)
 
-    @neovim.autocmd('BufEnter', pattern='*.py', sync=False)
+    @neovim.autocmd('BufEnter', pattern='*.py', sync=True)
     def on_buf_enter(self, buffname=None):
         '''on_buf_enter
         expose the BufEnter autocommand
         :param buffname:
         '''
-        buffname = self.cbname()
+        if not buffname:
+            buffname = self.cbname()
         if buffname[:7] == 'term://':
             return
         if buffname not in self._toggle_status:
@@ -423,7 +424,7 @@ class NvimPudb(object):
         else:
             self.toggle_sign_off()
 
-    @neovim.autocmd('TextChanged', pattern='*.py', sync=False)
+    @neovim.autocmd('TextChanged', pattern='*.py', sync=True)
     def on_text_change(self, buffname=None):
         if not buffname:
             buffname = self.cbname()
@@ -431,7 +432,7 @@ class NvimPudb(object):
             return
         self.update_breakpoints_cmd(buffname)
 
-    @neovim.autocmd('InsertLeave', pattern='*.py', sync=False)
+    @neovim.autocmd('InsertLeave', pattern='*.py', sync=True)
     def on_insert_leave(self, buffname=None):
         if not buffname:
             buffname = self.cbname()
