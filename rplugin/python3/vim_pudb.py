@@ -382,6 +382,8 @@ class NvimPudb(object):
         '''
         if not buffname:
             buffname = self.cbname()
+        if buffname[:7] == 'term://':
+            return
         if buffname not in self._toggle_status:
             self._toggle_status[buffname] = False
         self.nvim.command(':sign define {} text={} texthl={}'.format(
@@ -397,6 +399,8 @@ class NvimPudb(object):
         '''
         if not buffname:
             buffname = self.cbname()
+        if buffname[:7] == 'term://':
+            return
         if buffname not in self._toggle_status:
             self._toggle_status[buffname] = False
         self.nvim.command(':sign define {} text={} texthl={}'.format(
