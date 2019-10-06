@@ -202,6 +202,7 @@ class NvimPudb(object):
         else:
             self.toggle_sign_off(buffname)
 
+    @neovim.command("PUDBOnAllSigns", sync=False)
     def toggle_sign_on(self, buffname=None):
         if not buffname:
             buffname = self.cbname()
