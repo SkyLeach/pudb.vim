@@ -376,6 +376,8 @@ class NvimPudb(object):
             return
         if buffname not in self._toggle_status:
             self._toggle_status[buffname] = False
+        if buffname not in self._bps_placed:
+            self._bps_placed[buffname] = []
         self.nvim.command(':sign define {} text={} texthl={}'.format(
             self.sgnname(), self.bpsymbol(), self.hlgroup()))
         self.update_buffer(buffname)
@@ -393,6 +395,8 @@ class NvimPudb(object):
             return
         if buffname not in self._toggle_status:
             self._toggle_status[buffname] = False
+        if buffname not in self._bps_placed:
+            self._bps_placed[buffname] = []
         self.nvim.command(':sign define {} text={} texthl={}'.format(
             self.sgnname(), self.bpsymbol(), self.hlgroup()))
         self.update_buffer(buffname)
@@ -409,6 +413,8 @@ class NvimPudb(object):
             return
         if buffname not in self._toggle_status:
             self._toggle_status[buffname] = False
+        if buffname not in self._bps_placed:
+            self._bps_placed[buffname] = []
         if self._toggle_status[buffname]:
             self.toggle_sign_on()
         else:
