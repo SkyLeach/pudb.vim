@@ -213,6 +213,7 @@ class NvimPudb(object):
                 'sign place {} line={} name={} file={}'.format(
                     i, i // 10, self.sgnname(), buffname))
 
+    @neovim.command("PUDBOffAllSigns", sync=False)
     def toggle_sign_off(self, buffname=None):
         if not buffname:
             buffname = self.cbname()
