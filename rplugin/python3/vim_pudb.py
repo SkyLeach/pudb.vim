@@ -97,14 +97,6 @@ class NvimPudb(object):
         self.nvim.command("let g:pudb_entry_point='{}'".format(entrypoint))
 
     # @property
-    def pudb_signify(self):
-        return self.nvim.vars.get('pudb_signify', 0)
-
-    # @entrypoint.setter
-    def set_pudb_signify(self, pudb_signify):
-        self.nvim.command("let g:pudb_signify='{}'".format(pudb_signify))
-
-    # @property
     def cbname(self):
         """cbname
         returns the current buffer's name attribute
@@ -215,8 +207,6 @@ class NvimPudb(object):
             buffname = self.cbname()
         self.toggle_sign = True
         self._toggle_status[buffname] = True
-        if self.pudb_signify():
-            self.nvim.command('SignifyDisable')
         for i in self._bps_placed[buffname]:
             self.nvim.command(
                 'sign place {} line={} name={} file={}'.format(
@@ -230,8 +220,6 @@ class NvimPudb(object):
         for i in self._bps_placed[buffname]:
             self.nvim.command(
                 'sign unplace {} file={}'.format(i, buffname))
-        if self.pudb_signify():
-            self.nvim.command('SignifyEnable')
 
     def has_breakpoint(self, buffname, lineno):
         if buffname in self._bps_placed and \
