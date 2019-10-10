@@ -121,6 +121,18 @@ class NvimPudb(object):
         # define our sign command
         # super().__init__()
 
+    def buf_initial(self, buffname):
+        """TODO: Docstring for buf_initial.
+
+        :buffname: TODO
+        :returns: TODO
+
+        """
+        if buffname not in self._toggle_status:
+            self._toggle_status[buffname] = False
+        if buffname not in self._bps_placed:
+            self._bps_placed[buffname] = []
+
     def iter_breakpoints(self, buffname=None):
         """iter_breakpoints
         iterates over the breakpoints registered with pudb for this buffer
@@ -206,6 +218,7 @@ class NvimPudb(object):
     def toggle_sign_on(self, buffname=None):
         if not buffname:
             buffname = self.cbname()
+        self.buf_initial(buffname)
         self.toggle_sign = True
         self._toggle_status[buffname] = True
         for i in self._bps_placed[buffname]:
@@ -217,6 +230,7 @@ class NvimPudb(object):
     def toggle_sign_off(self, buffname=None):
         if not buffname:
             buffname = self.cbname()
+        self.buf_initial(buffname)
         self.toggle_sign = False
         self._toggle_status[buffname] = False
         for i in self._bps_placed[buffname]:
@@ -374,10 +388,7 @@ class NvimPudb(object):
             buffname = self.cbname()
         if buffname[:7] == 'term://':
             return
-        if buffname not in self._toggle_status:
-            self._toggle_status[buffname] = False
-        if buffname not in self._bps_placed:
-            self._bps_placed[buffname] = []
+        self.buf_initial(buffname)
         self.nvim.command(':sign define {} text={} texthl={}'.format(
             self.sgnname(), self.bpsymbol(), self.hlgroup()))
         self.update_buffer(buffname)
@@ -393,10 +404,7 @@ class NvimPudb(object):
             buffname = self.cbname()
         if buffname[:7] == 'term://':
             return
-        if buffname not in self._toggle_status:
-            self._toggle_status[buffname] = False
-        if buffname not in self._bps_placed:
-            self._bps_placed[buffname] = []
+        self.buf_initial(buffname)
         self.nvim.command(':sign define {} text={} texthl={}'.format(
             self.sgnname(), self.bpsymbol(), self.hlgroup()))
         self.update_buffer(buffname)
@@ -411,10 +419,7 @@ class NvimPudb(object):
             buffname = self.cbname()
         if buffname[:7] == 'term://':
             return
-        if buffname not in self._toggle_status:
-            self._toggle_status[buffname] = False
-        if buffname not in self._bps_placed:
-            self._bps_placed[buffname] = []
+        self.buf_initial(buffname)
         if self._toggle_status[buffname]:
             self.toggle_sign_on()
         else:
@@ -426,6 +431,7 @@ class NvimPudb(object):
             buffname = self.cbname()
         if buffname[:7] == 'term://':
             return
+        self.buf_initial(buffname)
         self.update_breakpoints_cmd(buffname)
 
     @neovim.autocmd('InsertLeave', pattern='*.py', sync=True)
@@ -434,4 +440,5 @@ class NvimPudb(object):
             buffname = self.cbname()
         if buffname[:7] == 'term://':
             return
+        self.buf_initial(buffname)
         self.update_breakpoints_cmd(buffname)
