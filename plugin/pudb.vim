@@ -18,7 +18,7 @@ if !has('nvim')
     endif
     " TODO: move to command
     if !exists("g:pudb_entry_point")
-        let g:pudb_entry_point='${HOME}/src/poweruser_tools/test/test_templates.py'
+        let g:pudb_entry_point=expand("%:p")
     endif
     if !exists("g:pudb_breakpoint_symbol")
         let g:pudb_breakpoint_symbol='!'
@@ -30,7 +30,7 @@ if !has('nvim')
         let g:pudb_highlight_group='debug'
     endif
     function! s:signid()
-        return 10*vim.eval("getline('.')")
+        return 10*int(vim.eval("line('.')"))
     endfunction
     execute 'sign' 'define' g:pudb_sign_name 'text='.g:pudb_breakpoint_symbol 'texthl='.g:pudb_highlight_group
     augroup pudbbp
@@ -55,7 +55,7 @@ bps = pudb.settings.load_breakpoints()
 for bp in bps:
     if bp[0] != filename:
         continue
-    line = vim.eval('getline(".")')
+    line = int(vim.eval('line(".")'))
     sign_id = 10 * line
     vim.command('sign place {} line={} name={} file={}'.format(
             sign_id,
@@ -87,6 +87,7 @@ EOF
     endfunction
     command! LaunchDebuggerTab call s:LaunchDebugger()
     function! s:LaunchDebugger()
+        echo "Remeber to add 'from pudb import set_trace; set_trace()' to your python"
         execute 'tab' 'terminal' '++close' g:pudb_python_launcher g:pudb_entry_point
     endfunction
 endif
