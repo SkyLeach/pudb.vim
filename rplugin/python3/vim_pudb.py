@@ -313,57 +313,16 @@ class NvimPudb(object):
             self.place_sign(buffname, row)
         self.update_pudb_breakpoints(buffname)
 
-    def get_buffer_venv_launcher(self, buffname=None):
-        if not buffname:
-            buffname = self.cbname()
-
-        def getpath(project):
-            try:
-                with open(os.path.join(project, '.project')) as pfile:
-                    return pfile.readline().strip()
-            except Exception:
-                # probably no .project file
-                return '.'
-
-        def projectiter(ppaths):
-            for project in ppaths:
-                yield getpath(project)
-
-        for root, dirs, files in os.walk(os.path.expanduser(
-                '~/.virtualenvs')):
-            venvs = set(dirs).difference(('bin', 'lib', 'include'))
-            # venvs = list(map(lambda x: os.path.join(root,x), venvs))
-            for ppath in projectiter(
-                    map(lambda x: os.path.join(root, x), venvs)):
-                if buffname.startswith(os.path.join(root, ppath)):
-                    return os.path.join(os.path.join(
-                        root, ppath), 'bin', 'python')
-        return self.launcher()
-
-    @neovim.command("PUDBSetEntrypointVENV", sync=False)
-    def set_curbuff_as_entrypoint_with_venv(self, buffname=None):
-        '''set_curbuff_as_entrypoint_with_venv
-
-        :param buffname: override the current buffer
-        '''
-        self.set_curbuff_as_entrypoint(buffname=buffname, set_venv=True)
-
     @neovim.command("PUDBSetEntrypoint", sync=False)
-    def set_curbuff_as_entrypoint(self, buffname=None, set_venv=False):
+    def set_curbuff_as_entrypoint(self, buffname=None):
         '''set_curbuff_as_entrypoint
 
         Set up the launcher to use the current buffer as the debug entry point.
-        By default this will not use the buffer's virtualenv.  Use
-        PUDBSetEntrypointVENV for that.
 
         :param buffname: override current buffer name
-        :param set_venv: attempt to find and set the buffer's relative virtual
-        environment from ~/.virtualenvs/<venvs>/.project
         '''
         if not buffname:
             buffname = self.cbname()
-        if set_venv:
-            self.set_launcher(self.get_buffer_venv_launcher(buffname))
         self.set_entrypoint(buffname)
 
     @neovim.command("PUDBUpdateBreakPoints", sync=False)
