@@ -94,7 +94,11 @@ class NvimPudb(object):
 
     # @entrypoint.setter
     def set_entrypoint(self, entrypoint):
-        self.nvim.command("let g:pudb_entry_point='{}'".format(entrypoint))
+        if self.nvim.vars.get('pudb_entry_point', None) != entrypoint:
+            self.nvim.command("let g:pudb_entry_point='{}'".format(entrypoint))
+        else:
+            self.nvim.command("unlet g:pudb_entry_point")
+            self.nvim.command("echo 'Entry point cleared'")
 
     # @property
     def cbname(self):
