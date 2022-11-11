@@ -125,28 +125,6 @@ class NvimPudb(object):
         __logger__.addHandler(nvimhandler)
         # define our sign command
 
-    def buf_initial(self, buffname):
-        """TODO: Docstring for buf_initial.
-
-        :buffname: TODO
-        :returns: TODO
-
-        """
-        if buffname not in self._toggle_status:
-            self._toggle_status[buffname] = False
-        if buffname not in self._bps_placed:
-            self._bps_placed[buffname] = []
-
-    def iter_breakpoints(self, buffname=None):
-        """iter_breakpoints
-        iterates over the breakpoints registered with pudb for this buffer
-        """
-        for brpt in pudb.settings.load_breakpoints():
-            if not buffname:
-                yield self.pudbbp(*brpt[:2])
-            elif buffname == brpt[0]:
-                yield self.pudbbp(*brpt[:2])
-
     def place_sign(self, buffname, lineno):
         """place_sign
         Places a new sign on the buffer and registers it as a breakpoint with
