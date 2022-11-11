@@ -135,6 +135,11 @@ class NvimPudb(object):
         self._bps_placed[buffname] = []
         self.save_bp_file()
 
+    @neovim.command("PUDBRemoveBreakpoints", sync=False)
+    def remove_bp_file(self):
+        os.remove(self._bp_file)
+        self.blank_file()
+
     @neovim.command("PUDBToggleAllSigns", sync=False)
     def toggle_signs(self, buffname=None):
         if not buffname:
