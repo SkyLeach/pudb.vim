@@ -179,17 +179,13 @@ class NvimPudb(object):
         self.save_bp_file()
 
     @neovim.command("PUDBToggleAllSigns", sync=False)
-    def toggle_all_signs(self, buffname=None):
-        """toggle_all_signs
-        removes all signs from the buffer
-        :param buffname:
-        """
+    def toggle_signs(self, buffname=None):
         if not buffname:
             buffname = self.cbname()
-        if not self.toggle_sign:
-            self.toggle_sign_on(buffname)
+        if not self._toggle_status[buffname]:
+            self.sings_on(buffname)
         else:
-            self.toggle_sign_off(buffname)
+            self.signs_off(buffname)
 
     @neovim.command("PUDBOnAllSigns", sync=False)
     def toggle_sign_on(self, buffname=None):
