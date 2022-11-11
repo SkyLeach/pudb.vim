@@ -170,18 +170,13 @@ class NvimPudb(object):
 
     @neovim.command("PUDBClearAllBreakpoints", sync=False)
     def clear_all_bps(self, buffname=None):
-        """clear_all_bps
-        removes all signs from the buffer and all breakpoints from pudb
-        :param buffname:
-        """
         if not buffname:
             buffname = self.cbname()
-        if buffname in self._bps_placed:
-            for i in self._bps_placed[buffname]:
-                self.nvim.command('sign unplace {} file={}'.format(i,
-                                                                   buffname))
+        self.test_buffer(buffname)
+        for num_line in self._bps_placed[buffname]:
+            self.remove_sign(buffname, num_line)
         self._bps_placed[buffname] = []
-        self.update_pudb_breakpoints(buffname)
+        self.save_bp_file()
 
     @neovim.command("PUDBToggleAllSigns", sync=False)
     def toggle_all_signs(self, buffname=None):
