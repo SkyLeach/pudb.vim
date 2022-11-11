@@ -188,16 +188,13 @@ class NvimPudb(object):
             self.signs_off(buffname)
 
     @neovim.command("PUDBOnAllSigns", sync=False)
-    def toggle_sign_on(self, buffname=None):
+    def sings_on(self, buffname=None):
         if not buffname:
             buffname = self.cbname()
-        self.buf_initial(buffname)
-        self.toggle_sign = True
         self._toggle_status[buffname] = True
-        for i in self._bps_placed[buffname]:
-            self.nvim.command(
-                'sign place {} line={} name={} file={}'.format(
-                    i, i // 10, self.sgnname(), buffname))
+        self.test_buffer(buffname)
+        for num_line in self._bps_placed[buffname]:
+            self.place_sign(buffname, num_line)
 
     @neovim.command("PUDBOffAllSigns", sync=False)
     def toggle_sign_off(self, buffname=None):
