@@ -32,16 +32,6 @@ class NvimOutLogHandler(logging.Handler):
         self.flush()
 
 
-def signid(buffname, lineno):
-    """signid
-    returns the signid generated from the filename and line number
-    :param buffname: name of the buffer (filename)
-    :param lineno: line number specific to buffer
-    """
-    return 10 * lineno
-    # return hash(buffname) + lineno
-
-
 @neovim.plugin
 class NvimPudb(object):
     """NvimPudb
