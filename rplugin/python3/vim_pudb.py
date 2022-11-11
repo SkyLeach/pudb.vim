@@ -176,15 +176,12 @@ class NvimPudb(object):
 
     @neovim.command("PUDBStatus", sync=False)
     def pudb_status(self):
-        """pudb_status
-        print the status of this plugin to :messages in neovim"""
-        for key in self._bps_placed:
-            self._status_info[key] = [[x // 10 for x in self._bps_placed[key]],
-                                      self._toggle_status[key]]
-        status_echo_cmd = 'echo "{}\n{}"'.format(
-            pprint.pformat(self._status_info),
-            pprint.pformat([type(self), self.hlgroup(), self.nvim]))
-        self.nvim.command(status_echo_cmd)
+        status_info = {}
+        for buffname in self._bps_placed:
+            status_info[buffname] = [
+                    [num_line for num_line in self._bps_placed[buffname]],
+                    self._toggle_status[buffname]]
+        self.print_feature(status_info)
 
     @neovim.command("PUDBToggleBreakPoint", sync=False)
     def toggle_breakpoint_cmd(self, buffname=None):
