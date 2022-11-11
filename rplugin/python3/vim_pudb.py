@@ -197,15 +197,13 @@ class NvimPudb(object):
             self.place_sign(buffname, num_line)
 
     @neovim.command("PUDBOffAllSigns", sync=False)
-    def toggle_sign_off(self, buffname=None):
+    def signs_off(self, buffname=None):
         if not buffname:
             buffname = self.cbname()
-        self.buf_initial(buffname)
-        self.toggle_sign = False
         self._toggle_status[buffname] = False
-        for i in self._bps_placed[buffname]:
-            self.nvim.command(
-                'sign unplace {} file={}'.format(i, buffname))
+        self.test_buffer(buffname)
+        for num_line in self._bps_placed[buffname]:
+            self.remove_sign(buffname, num_line)
 
     def has_breakpoint(self, buffname, lineno):
         if buffname in self._bps_placed and \
