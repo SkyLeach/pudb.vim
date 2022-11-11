@@ -110,12 +110,13 @@ class NvimPudb(object):
     def __init__(self, nvim=None):
         # set our nvim hook first...
         self.nvim = nvim
-        self._toggle_status = dict()
-        self._status_info = dict()
-        self._bps_placed = dict()  # type: Dict[str,List]
-        self.pudbbp = collections.namedtuple('Breakpoint',
-                                             ['filename', 'lineno'])
-        self.toggle_sign = False
+        self._toggle_status = {}
+        self._bps_placed = {}  # type: Dict[str,List]
+        self._cond_dict = {}  # type: Dict[str,List]
+        self._bp_config_dir = ""
+        self._bp_file = ""
+        self.load_base_dir()
+        self.load_bp_file()
         # update the __logger__ to use neovim for messages
         nvimhandler = NvimOutLogHandler(nvim)
         # nvimhandler.setLevel(logging.INFO)
@@ -123,7 +124,6 @@ class NvimPudb(object):
         __logger__.setLevel(logging.DEBUG)
         __logger__.addHandler(nvimhandler)
         # define our sign command
-        # super().__init__()
 
     def buf_initial(self, buffname):
         """TODO: Docstring for buf_initial.
