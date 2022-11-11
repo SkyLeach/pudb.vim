@@ -213,69 +213,35 @@ class NvimPudb(object):
 
     # set sync so that the current buffer can't change until we are done
     @neovim.autocmd('BufRead', pattern='*.py', sync=True)
-    def on_bufread(self, buffname=None):
-        '''on_bufread
-        expose the BufReadPost autocommand
-        :param buffname:
-        '''
-        if not buffname:
-            buffname = self.cbname()
-        if buffname[:7] == 'term://':
-            return
-        self.buf_initial(buffname)
-        self.nvim.command(':sign define {} text={} texthl={}'.format(
-            self.sgnname(), self.bpsymbol(), self.hlgroup()))
-        self.update_buffer(buffname)
+    def on_bufread(self):
+        self.update_buffer()
 
     # set sync so that the current buffer can't change until we are done
     @neovim.autocmd('BufNewFile', pattern='*.py', sync=True)
-    def on_bufnewfile(self, buffname=None):
-        '''on_bufnewfile
-        expose the BufNewFile autocommand
-        :param buffname:
-        '''
-        if not buffname:
-            buffname = self.cbname()
-        if buffname[:7] == 'term://':
-            return
-        self.buf_initial(buffname)
-        self.nvim.command(':sign define {} text={} texthl={}'.format(
-            self.sgnname(), self.bpsymbol(), self.hlgroup()))
-        self.update_buffer(buffname)
+    def on_bufnewfile(self):
+        self.update_buffer()
 
     @neovim.autocmd('BufEnter', pattern='*.py', sync=True)
-    def on_buf_enter(self, buffname=None):
-        '''on_buf_enter
-        expose the BufEnter autocommand
-        :param buffname:
-        '''
-        if not buffname:
-            buffname = self.cbname()
-        if buffname[:7] == 'term://':
-            return
-        self.buf_initial(buffname)
-        if self._toggle_status[buffname]:
-            self.toggle_sign_on()
-        else:
-            self.toggle_sign_off()
+    def on_buf_enter(self):
+        self.update_buffer()
 
     @neovim.autocmd('TextChanged', pattern='*.py', sync=True)
-    def on_text_change(self, buffname=None):
-        if not buffname:
-            buffname = self.cbname()
-        if buffname[:7] == 'term://':
-            return
-        self.buf_initial(buffname)
-        self.update_breakpoints_cmd(buffname)
+    def on_text_change(self):
+        self.update_buffer()
 
     @neovim.autocmd('InsertLeave', pattern='*.py', sync=True)
-    def on_insert_leave(self, buffname=None):
-        if not buffname:
-            buffname = self.cbname()
+    def on_insert_leave(self):
+        self.update_buffer()
+
+    def update_buffer(self):
+        buffname = self.cbname()
         if buffname[:7] == 'term://':
             return
-        self.buf_initial(buffname)
-        self.update_breakpoints_cmd(buffname)
+        self.nvim.command(":sign define {} text={} texthl={}".format(
+                self.sgnname(), self.bpsymbol(), self.hlgroup()))
+        self.load_bp_file()
+        if self._toggle_status[buffname]:
+            self.update_sign()
 
     def test_buffer(self, buffname):
         if buffname not in self._bps_placed:
