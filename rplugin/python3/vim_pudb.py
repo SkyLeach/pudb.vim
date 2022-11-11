@@ -199,26 +199,17 @@ class NvimPudb(object):
 
     @neovim.command("PUDBSetEntrypoint", sync=False)
     def set_curbuff_as_entrypoint(self, buffname=None):
-        '''set_curbuff_as_entrypoint
-
-        Set up the launcher to use the current buffer as the debug entry point.
-
-        :param buffname: override current buffer name
-        '''
         if not buffname:
             buffname = self.cbname()
         self.set_entrypoint(buffname)
 
     @neovim.command("PUDBUpdateBreakPoints", sync=False)
-    def update_breakpoints_cmd(self, buffname=None):
-        '''update_breakpoints_cmd
-        expose the UpdateBreakPoints command
-        :param buffname:
-        '''
+    def update_sign(self, buffname=None):
         if not buffname:
             buffname = self.cbname()
-        # remove existing signs if any
-        self.update_buffer(buffname)
+        if self._toggle_status[buffname]:
+            self.signs_off(buffname)
+            self.sings_on(buffname)
 
     # set sync so that the current buffer can't change until we are done
     @neovim.autocmd('BufRead', pattern='*.py', sync=True)
