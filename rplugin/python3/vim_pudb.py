@@ -167,53 +167,11 @@ class NvimPudb(object):
         for num_line in self._bps_placed[buffname]:
             self.remove_sign(buffname, num_line)
 
-    def has_breakpoint(self, buffname, lineno):
-        if buffname in self._bps_placed and \
-                signid(buffname, lineno) in self._bps_placed[buffname]:
-            return True
-        return False
-
-    def update_pudb_breakpoints(self, buffname):
-        bps = []
-        if buffname in self._bps_placed:
-            for ln in self._bps_placed[buffname]:
-                bps.append(self.pudbbp(buffname, int(ln / 10)))
-        for bpt in self.iter_breakpoints():
-            if bpt.filename == buffname:
-                # we already placed these
-                continue
-            else:
-                # make sure we pass on anything we aren't messing with
-                bps.append(bpt)
-        pudb.settings.save_breakpoints(
-            list(map(lambda x: Breakpoint(x.filename, x.lineno), bps)))
-
-    def update_buffer(self, buffname):
-        """update_buffer
-        Simply updates the buffer signs from the pudb breakpoints, if any
-        :param buffname:
-        :param toggle_ln:
-        """
-        if self.toggle_sign:
-            for i in self._bps_placed[buffname]:
-                self.nvim.command(
-                    'sign unplace {} file={}'.format(i, buffname))
-            for i in self._bps_placed[buffname]:
-                self.nvim.command(
-                    'sign place {} line={} name={} file={}'.format(
-                        i, i // 10, self.sgnname(), buffname))
-
     @neovim.command("PUDBLaunchDebuggerTab", sync=True)
     def launchdebugtab(self):
-        # if necessary, get the virtual env setup
-        # autocmd FileType python nnoremap <silent> <leader>td :tabnew
-        # term://source ${HOME}/.virtualenvs/$(cat .dbve)/bin/activate
-        # && python -mpudb %<CR>:startinsert<CR>
         new_term_tab_cmd = 'tabnew term://{} -m pudb.run {}'.format(
-            self.launcher(),
-            self.entrypoint())
+                self.launcher(), self.entrypoint())
         self.nvim.command(new_term_tab_cmd)
-        # we have to wait for the terminal to be opened...
         self.nvim.command('startinsert')
 
     @neovim.command("PUDBStatus", sync=False)
