@@ -184,19 +184,18 @@ class NvimPudb(object):
         self.print_feature(status_info)
 
     @neovim.command("PUDBToggleBreakPoint", sync=False)
-    def toggle_breakpoint_cmd(self, buffname=None):
-        """toggle_breakpoint_cmd
-        toggles a sign&mark from off to on or none to one
-        :param buffname:
-        """
+    def toggle_bp(self, buffname=None):
         if not buffname:
             buffname = self.cbname()
-        row = self.nvim.current.window.cursor[0]
-        if self.has_breakpoint(buffname, row):
-            self.remove_sign(buffname, row)
+        num_line = self.nvim.current.window.cursor[0]
+
+        if num_line not in self._bps_placed[buffname]:
+            self._bps_placed[buffname].append(num_line)
+            self._bps_placed[buffname].sort()
         else:
-            self.place_sign(buffname, row)
-        self.update_pudb_breakpoints(buffname)
+            self._bps_placed[buffname].remove(num_line)
+        self.update_sign(buffname)
+        self.save_bp_file()
 
     @neovim.command("PUDBSetEntrypoint", sync=False)
     def set_curbuff_as_entrypoint(self, buffname=None):
