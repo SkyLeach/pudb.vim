@@ -200,29 +200,15 @@ class NvimPudb(object):
             self.signs_off(buffname)
             self.signs_on(buffname)
 
-    # set sync so that the current buffer can't change until we are done
-    @neovim.autocmd('BufRead', pattern='*.py', sync=True)
-    def on_bufread(self):
-        self.update_buffer()
-
-    # set sync so that the current buffer can't change until we are done
-    @neovim.autocmd('BufNewFile', pattern='*.py', sync=True)
-    def on_bufnewfile(self):
-        self.update_buffer()
+    @neovim.autocmd('TextChanged', pattern='*.py', sync=True)
+    def on_txt_changed(self):
+        buffname = self.cbname()
+        if buffname[:7] == 'term://':
+            return
+        self.update_sign(buffname)
 
     @neovim.autocmd('BufEnter', pattern='*.py', sync=True)
     def on_buf_enter(self):
-        self.update_buffer()
-
-    @neovim.autocmd('TextChanged', pattern='*.py', sync=True)
-    def on_text_change(self):
-        self.update_buffer()
-
-    @neovim.autocmd('InsertLeave', pattern='*.py', sync=True)
-    def on_insert_leave(self):
-        self.update_buffer()
-
-    def update_buffer(self):
         buffname = self.cbname()
         if buffname[:7] == 'term://':
             return
