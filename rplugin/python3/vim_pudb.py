@@ -4,6 +4,7 @@ debugger in order to make neovim not only an excellent editor but also a
 full-function python IDE.
 '''
 from bdb import Breakpoint
+import sys
 import logging
 import pprint
 import collections
@@ -107,6 +108,10 @@ class NvimPudb(object):
         self._cond_dict = {}  # type: Dict[str,List]
         self._bp_config_dir = ""
         self._bp_file = ""
+        launcher_version_command = ' -c "import sys;print(sys.version_info[:2])"'
+        self._launcher_version = list(map(int, os.popen(
+                self.launcher() +
+                launcher_version_command).read().strip()[1:-1].split(',')))
         self.load_base_dir()
         self.load_bp_file()
         # update the __logger__ to use neovim for messages
@@ -168,6 +173,7 @@ class NvimPudb(object):
         if not buffname:
             buffname = self.cbname()
         num_line = self.nvim.current.window.cursor[0]
+        self.load_bp_file()
 
         if num_line not in self._bps_placed[buffname]:
             self._bps_placed[buffname].append(num_line)
@@ -194,29 +200,15 @@ class NvimPudb(object):
             self.signs_off(buffname)
             self.signs_on(buffname)
 
-    # set sync so that the current buffer can't change until we are done
-    @neovim.autocmd('BufRead', pattern='*.py', sync=True)
-    def on_bufread(self):
-        self.update_buffer()
-
-    # set sync so that the current buffer can't change until we are done
-    @neovim.autocmd('BufNewFile', pattern='*.py', sync=True)
-    def on_bufnewfile(self):
-        self.update_buffer()
+    @neovim.autocmd('TextChanged', pattern='*.py', sync=True)
+    def on_txt_changed(self):
+        buffname = self.cbname()
+        if buffname[:7] == 'term://':
+            return
+        self.update_sign(buffname)
 
     @neovim.autocmd('BufEnter', pattern='*.py', sync=True)
     def on_buf_enter(self):
-        self.update_buffer()
-
-    @neovim.autocmd('TextChanged', pattern='*.py', sync=True)
-    def on_text_change(self):
-        self.update_buffer()
-
-    @neovim.autocmd('InsertLeave', pattern='*.py', sync=True)
-    def on_insert_leave(self):
-        self.update_buffer()
-
-    def update_buffer(self):
         buffname = self.cbname()
         if buffname[:7] == 'term://':
             return
@@ -245,17 +237,15 @@ class NvimPudb(object):
             if len(num_line) > 1:
                 self._cond_dict["{}:{}".format(
                         buffname, num_line[0])] = ", ".join(num_line[1:])
+            self.test_buffer(buffname)
+            self._bps_placed[buffname].append(int(num_line[0]))
 
-            if buffname in self._bps_placed:
-                self._bps_placed[buffname].append(int(num_line[0]))
-            else:
-                self._bps_placed[buffname] = [int(num_line[0])]
+        for buffname in self._bps_placed:
             self._bps_placed[buffname] = list(set(self._bps_placed[buffname]))
             self._bps_placed[buffname].sort()
 
         buffname = self.cbname()
         self.test_buffer(buffname)
-        self.signs_on(buffname)
 
     def save_bp_file(self):
         self.make_links()
@@ -288,6 +278,10 @@ class NvimPudb(object):
                     f.write(tmp_input)
                 os.remove(tmp_path)
                 os.symlink(self._bp_file, tmp_path)
+        tmp_path = '{}saved-breakpoints-{}.{}'.format(
+                self._bp_config_dir, *self._launcher_version)
+        if not os.path.exists(tmp_path):
+            os.symlink(self._bp_file, tmp_path)
 
     def load_base_dir(self):
         _home = os.environ.get("HOME", os.path.expanduser("~"))
@@ -308,7 +302,7 @@ class NvimPudb(object):
         for entry in os.listdir(self._bp_config_dir):
             if breakpoints_file_name in entry:
                 files.append(entry)
-        return sorted(list(set(files)))
+        return sorted((files))
 
     def place_sign(self, buffname, num_line):
         signcmd = "sign place {} line={} name={} file={}".format(
