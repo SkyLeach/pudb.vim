@@ -136,6 +136,8 @@ class NvimPudb(object):
     def remove_bp_file(self):
         os.remove(self._bp_file)
         self.blank_file()
+        self.load_bp_file()
+        self.update_sign()
 
     @neovim.command("PUDBOnAllSigns", sync=True)
     def signs_on(self, buffname=None):
