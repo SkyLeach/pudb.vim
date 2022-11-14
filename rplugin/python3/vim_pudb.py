@@ -122,7 +122,7 @@ class NvimPudb(object):
         __logger__.addHandler(nvimhandler)
         # define our sign command
 
-    @neovim.command("PUDBClearAllBreakpoints", sync=False)
+    @neovim.command("PUDBClearAllBreakpoints", sync=True)
     def clear_all_bps(self, buffname=None):
         if not buffname:
             buffname = self.cbname()
@@ -132,12 +132,12 @@ class NvimPudb(object):
         self._bps_placed[buffname] = []
         self.save_bp_file()
 
-    @neovim.command("PUDBRemoveBreakpoints", sync=False)
+    @neovim.command("PUDBRemoveBreakpoints", sync=True)
     def remove_bp_file(self):
         os.remove(self._bp_file)
         self.blank_file()
 
-    @neovim.command("PUDBOnAllSigns", sync=False)
+    @neovim.command("PUDBOnAllSigns", sync=True)
     def signs_on(self, buffname=None):
         if not buffname:
             buffname = self.cbname()
@@ -145,12 +145,13 @@ class NvimPudb(object):
         for num_line in self._bps_placed[buffname]:
             self.place_sign(buffname, num_line)
 
-    @neovim.command("PUDBOffAllSigns", sync=False)
+    @neovim.command("PUDBOffAllSigns", sync=True)
     def signs_off(self, buffname=None):
         if not buffname:
             buffname = self.cbname()
         self.test_buffer(buffname)
-        for num_line in self._toggle_status[buffname][:]:
+        tmp = self._toggle_status[buffname][:]
+        for num_line in tmp:
             self.remove_sign(buffname, num_line)
 
     @neovim.command("PUDBLaunchDebuggerTab", sync=True)
@@ -160,7 +161,7 @@ class NvimPudb(object):
         self.nvim.command(new_term_tab_cmd)
         self.nvim.command('startinsert')
 
-    @neovim.command("PUDBStatus", sync=False)
+    @neovim.command("PUDBStatus", sync=True)
     def pudb_status(self):
         status_info = {}
         for buffname in self._bps_placed:
@@ -168,7 +169,7 @@ class NvimPudb(object):
                                      bool(self._toggle_status[buffname])]
         self.print_feature(status_info)
 
-    @neovim.command("PUDBToggleBreakPoint", sync=False)
+    @neovim.command("PUDBToggleBreakPoint", sync=True)
     def toggle_bp(self, buffname=None):
         if not buffname:
             buffname = self.cbname()
@@ -186,19 +187,22 @@ class NvimPudb(object):
             self.place_sign(buffname, num_line)
         self.save_bp_file()
 
-    @neovim.command("PUDBSetEntrypoint", sync=False)
+    @neovim.command("PUDBSetEntrypoint", sync=True)
     def set_curbuff_as_entrypoint(self, buffname=None):
         if not buffname:
             buffname = self.cbname()
         self.set_entrypoint(buffname)
 
-    @neovim.command("PUDBUpdateBreakPoints", sync=False)
+    @neovim.command("PUDBUpdateBreakPoints", sync=True)
     def update_sign(self, buffname=None):
         if not buffname:
             buffname = self.cbname()
-        if self._toggle_status[buffname]:
+        tmp = self._toggle_status[buffname]
+        if tmp:
             self.signs_off(buffname)
             self.signs_on(buffname)
+        # self.print_feature([self._toggle_status, self._bps_placed,
+        #                     self.debugger, buffname])
 
     @neovim.autocmd('TextChanged', pattern='*.py', sync=True)
     def on_txt_changed(self):
@@ -209,6 +213,14 @@ class NvimPudb(object):
 
     @neovim.autocmd('BufEnter', pattern='*.py', sync=True)
     def on_buf_enter(self):
+        buffname = self.cbname()
+        if buffname[:7] == 'term://':
+            return
+        self.load_bp_file()
+        self.update_sign(buffname)
+
+    @neovim.autocmd('TermLeave', pattern='*.py', sync=True)
+    def on_term_close(self):
         buffname = self.cbname()
         if buffname[:7] == 'term://':
             return
@@ -310,7 +322,7 @@ class NvimPudb(object):
         self.nvim.command(signcmd)
         if num_line not in self._toggle_status[buffname]:
             self._toggle_status[buffname].append(num_line)
-            self._toggle_status[buffname].sort()
+        self._toggle_status[buffname].sort()
 
     def remove_sign(self, buffname, num_line):
         signcmd = 'sign unplace {} file={}'.format(num_line * 10, buffname)
