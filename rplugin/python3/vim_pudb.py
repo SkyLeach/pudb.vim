@@ -48,6 +48,14 @@ class NvimPudb(object):
         self.nvim.command("let g:pudb_sign_name='{}'".format(sgnname))
 
     # @property
+    def sgngroup(self):
+        return self.nvim.vars.get('pudb_sign_group', 'pudbbps')
+
+    # @sgngroup.setter
+    def set_sgngroup(self, sgngroup):
+        self.nvim.command("let g:pudb_sign_group='{}'".format(sgngroup))
+
+    # @property
     def bpsymbol(self):
         return self.nvim.vars.get('pudb_breakpoint_symbol', '!')
 
@@ -103,7 +111,6 @@ class NvimPudb(object):
         self.nvim = nvim
         self.nvim.command(":sign define {} text={} texthl={}".format(
                 self.sgnname(), self.bpsymbol(), self.hlgroup()))
-        self._toggle_status = {}
         self._bps_placed = {}  # type: Dict[str,List]
         self._cond_dict = {}  # type: Dict[str,List]
         self._bp_config_dir = ""
@@ -126,9 +133,7 @@ class NvimPudb(object):
     def clear_all_bps(self, buffname=None):
         if not buffname:
             buffname = self.cbname()
-        self.test_buffer(buffname)
-        for num_line in self._toggle_status[buffname][:]:
-            self.remove_sign(buffname, num_line)
+        self.signs_off(buffname)
         self._bps_placed[buffname] = []
         self.save_bp_file()
 
@@ -143,7 +148,6 @@ class NvimPudb(object):
     def signs_on(self, buffname=None):
         if not buffname:
             buffname = self.cbname()
-        self.test_buffer(buffname)
         for num_line in self._bps_placed[buffname]:
             self.place_sign(buffname, num_line)
 
@@ -151,10 +155,8 @@ class NvimPudb(object):
     def signs_off(self, buffname=None):
         if not buffname:
             buffname = self.cbname()
-        self.test_buffer(buffname)
-        tmp = self._toggle_status[buffname][:]
-        for num_line in tmp:
-            self.remove_sign(buffname, num_line)
+        signcmd = 'sign unplace * group={} file={}'.format(self.sgngroup(), buffname)
+        self.nvim.command(signcmd)
 
     @neovim.command("PUDBLaunchDebuggerTab", sync=True)
     def launchdebugtab(self):
@@ -165,11 +167,7 @@ class NvimPudb(object):
 
     @neovim.command("PUDBStatus", sync=True)
     def pudb_status(self):
-        status_info = {}
-        for buffname in self._bps_placed:
-            status_info[buffname] = [self._bps_placed[buffname],
-                                     bool(self._toggle_status[buffname])]
-        self.print_feature(status_info)
+        self.print_feature(self._bps_placed)
 
     @neovim.command("PUDBToggleBreakPoint", sync=True)
     def toggle_bp(self, buffname=None):
@@ -177,17 +175,13 @@ class NvimPudb(object):
             buffname = self.cbname()
         num_line = self.nvim.current.window.cursor[0]
         self.load_bp_file()
-
         if num_line not in self._bps_placed[buffname]:
             self._bps_placed[buffname].append(num_line)
-            self._bps_placed[buffname].sort()
         else:
             self._bps_placed[buffname].remove(num_line)
-        if num_line in self._toggle_status[buffname]:
-            self.remove_sign(buffname, num_line)
-        else:
-            self.place_sign(buffname, num_line)
+        self._bps_placed[buffname].sort()
         self.save_bp_file()
+        self.update_sign()
 
     @neovim.command("PUDBSetEntrypoint", sync=True)
     def set_curbuff_as_entrypoint(self, buffname=None):
@@ -199,30 +193,26 @@ class NvimPudb(object):
     def update_sign(self, buffname=None):
         if not buffname:
             buffname = self.cbname()
-        tmp = self._toggle_status[buffname]
-        if tmp:
-            self.signs_off(buffname)
-            self.signs_on(buffname)
-        # self.print_feature([self._toggle_status, self._bps_placed,
-        #                     self.debugger, buffname])
+        self.signs_off(buffname)
+        self.signs_on(buffname)
 
     @neovim.autocmd('TextChanged', pattern='*.py', sync=True)
-    def on_txt_changed(self):
-        buffname = self.cbname()
-        if buffname[:7] == 'term://':
-            return
-        self.update_sign(buffname)
+    def on_txt_changed(self, buffname=None):
+        self.update_buffer(buffname)
+
+    @neovim.autocmd('Focusgained', pattern='*.py', sync=True)
+    def on_focus_gained(self, buffname=None):
+        self.update_buffer(buffname)
 
     @neovim.autocmd('BufEnter', pattern='*.py', sync=True)
-    def on_buf_enter(self):
-        buffname = self.cbname()
-        if buffname[:7] == 'term://':
-            return
-        self.load_bp_file()
-        self.update_sign(buffname)
+    def on_buf_enter(self, buffname=None):
+        self.update_buffer(buffname)
 
     @neovim.autocmd('TermLeave', pattern='*.py', sync=True)
-    def on_term_close(self):
+    def on_term_close(self, buffname=None):
+        self.update_buffer(buffname)
+
+    def update_buffer(self, buffname=None):
         buffname = self.cbname()
         if buffname[:7] == 'term://':
             return
@@ -232,8 +222,6 @@ class NvimPudb(object):
     def test_buffer(self, buffname):
         if buffname not in self._bps_placed:
             self._bps_placed[buffname] = []
-        if buffname not in self._toggle_status:
-            self._toggle_status[buffname] = []
 
     def load_bp_file(self):
         self.make_links()
@@ -284,7 +272,7 @@ class NvimPudb(object):
     def make_links(self):
         self.blank_file()
         for bp_file in self.find_bp_files():
-            tmp_path = self._bp_config_dir + bp_file
+            tmp_path = os.path.join(self._bp_config_dir, bp_file)
             if not os.path.islink(tmp_path):
                 with open(tmp_path, "r") as f:
                     tmp_input = f.read()
@@ -292,8 +280,8 @@ class NvimPudb(object):
                     f.write(tmp_input)
                 os.remove(tmp_path)
                 os.symlink(self._bp_file, tmp_path)
-        tmp_path = '{}saved-breakpoints-{}.{}'.format(
-                self._bp_config_dir, *self._launcher_version)
+        tmp_path = os.path.join(self._bp_config_dir,
+                                'saved-breakpoints-{}.{}'.format(*self._launcher_version))
         if not os.path.exists(tmp_path):
             os.symlink(self._bp_file, tmp_path)
 
@@ -307,8 +295,8 @@ class NvimPudb(object):
             xdg_config_dirs = [xdg_config_home]
         else:
             xdg_config_dirs = os.environ.get("XDG_CONFIG_DIRS", "/etc/xdg").split(":")
-        self._bp_config_dir = xdg_config_dirs[0] + "/pudb/"
-        self._bp_file = xdg_config_dirs[0] + "/pudb/saved-breakpoints"
+        self._bp_config_dir = os.path.join(xdg_config_dirs[0], "pudb")
+        self._bp_file = os.path.join(xdg_config_dirs[0], "pudb", "saved-breakpoints")
 
     def find_bp_files(self):
         files = []
@@ -319,24 +307,9 @@ class NvimPudb(object):
         return sorted((files))
 
     def place_sign(self, buffname, num_line):
-        signcmd = "sign place {} line={} name={} file={}".format(
-            num_line * 10, num_line, self.sgnname(), buffname)
+        signcmd = "sign place {} line={} name={} group={} file={}".format(
+            num_line * 10, num_line, self.sgnname(), self.sgngroup(), buffname)
         self.nvim.command(signcmd)
-        if num_line not in self._toggle_status[buffname]:
-            self._toggle_status[buffname].append(num_line)
-        self._toggle_status[buffname].sort()
-
-    def remove_sign(self, buffname, num_line):
-        signcmd = 'sign unplace {} file={}'.format(num_line * 10, buffname)
-        self.nvim.command(signcmd)
-        if num_line in self._toggle_status[buffname]:
-            self._toggle_status[buffname].remove(num_line)
-
-    def has_breakpoint(self, buffname, num_line):
-        self.test_buffer(buffname)
-        if num_line in self._bps_placed[buffname]:
-            return True
-        return False
 
     def print_feature(self, print_input):
         print_feature = 'echo "{}"'.format(pprint.pformat(print_input))
