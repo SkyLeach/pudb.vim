@@ -148,8 +148,9 @@ class NvimPudb(object):
     def signs_on(self, buffname=None):
         if not buffname:
             buffname = self.cbname()
-        for num_line in self._bps_placed[buffname]:
-            self.place_sign(buffname, num_line)
+        if buffname in self._bps_placed:
+            for num_line in self._bps_placed[buffname]:
+                self.place_sign(buffname, num_line)
 
     @neovim.command("PUDBOffAllSigns", sync=True)
     def signs_off(self, buffname=None):
